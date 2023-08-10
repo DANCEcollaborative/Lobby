@@ -38,10 +38,23 @@ roomsUnderTarget = []
 users = {}
 unassignedUsers = []
 
-# Route to handle incoming users from the web interface
+
+# This /login step is TEMPORARY to use a single HTML page to SIMULATE receive logins from multiple users.
+#     1. TEMPORARY step: Receive user_id from the request URL and send it back to the HTML page so the page can send a
+#        unique user_id with each request. In browsers, each http://<SERVER>/login/<user_id> URL will have a unique
+#        user_id value.
+#     2. PERMANENT step: Receive user data in a user_connect request. For simulation testing, all the user data except
+#        the user_id is a constant. For real world use, the "Launch OPE" button will send each data element customized
+#        for the user.
+#           -- Data:
+#                   a. user_id (unique, as received from temporary step 1)
+#                   b. name
+#                   c. email
+#                   d. password
+#                   e. entityId
+#                   f. Bazaar agent (I added this data requirement)
 @app.route('/login/<user_id>', methods=['GET', 'POST'])
 def login_get(user_id):
-    # user_queue.put(user_id)
     print("Login: received user_id " + str(user_id))
     return render_template('lobby.html', userID=user_id)
 
@@ -73,12 +86,6 @@ def start_task(user_id):
         room_num = "room" + user_room['room_num']
         print("start_task - emitting 'task_completed', message: " + str(room_num))
         emit('task_completed', {'message': room_num}, room=request.sid)
-
-
-# Plain lobby route
-@app.route('/')
-def index():
-    return "Welcome to the Lobby! Enter 127.0.0.1:5000/login/USER_ID"
 
 
 # Shut down the consumer thread when the server stops
@@ -117,15 +124,12 @@ def new_user(user_id):
 
 
 def reassign_room(user, room):
-    # print("reassign_room - user_id " + user['user_id'] + ": RETURN to URL " + room['url'])
-    print("reassign_room message: ")
     user_message = str(user['user_id']) + ": Return to URL " + room['url']
     print("reassign_room message: " + user_message)
     socketio.emit('update_event', {'message': user_message}, room=user['socket_id'])
 
 def print_uus():
     print(unassignedUsers)
-
 
 def assign_rooms():
     global unassignedUsers
@@ -358,7 +362,6 @@ consumer_thread.start()
 
 
 if __name__ == '__main__':
-    # socketio.run(app, debug=True, threaded=True)
     socketio.run(app, threaded=True, port=5000)
 
     # When the server is shut down, stop the consumer thread as well
