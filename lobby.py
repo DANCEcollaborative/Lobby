@@ -1,7 +1,5 @@
 import time
-from enum import Enum
-from operator import attrgetter
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 import threading
 import queue
 from flask import Flask, request, jsonify, render_template
@@ -25,11 +23,6 @@ fillRoomsUnderTarget = True
 overFillRooms = False
 urlPrefix = "http://bazaar.lti.cs.cmu.edu/room"
 nextRoomNum = 0
-
-# class RoomAssignmentPriority(Enum):
-#     leastUsers_MaxAge = 1
-#     leastUsers_MinAge = 2
-# roomPriority = RoomAssignmentPriority.leastUsers_MaxAge
 
 
 rooms = []
@@ -56,21 +49,26 @@ unassignedUsers = []
 @app.route('/login/<user_id>', methods=['GET', 'POST'])
 def login_get(user_id):
     print("Login: received user_id " + str(user_id))
-    return render_template('lobby.html', userID=user_id)
+    return render_template('lobby.html', user_id=user_id)
 
 
 @socketio.on('user_connect')
-def handle_user_connect(user_id):
+def process_user_connect(user_data):
     socket_id = request.sid
+    user_id = user_data.get('userId')
+    name = user_data.get('name')
+    email = user_data.get('email')
+    password = user_data.get('password')
+    entity_id = user_data.get('entityId')
+    agent = user_data.get('agent')
     print(f"Client connected with socket_id: {socket_id} -- user_id: " + user_id)
-    user_info = {'user_id': str(user_id), 'socket_id': socket_id}
+    user_info = {'user_id': str(user_id), 'socket_id': str(socket_id), 'name': str(name), 'email': str(email), 'password': str(password), 'entity_id': str(entity_id), 'agent': str(agent)}
     user_queue.put(user_info)
     print("Login - user_queue length: " + str(user_queue.qsize()))
-    # emit('response_event', {'response': 'Data received successfully'})
     emit('response_event', "Data received successfully")
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def process_disconnect():
     socket_id = request.sid
     print(f"Client DISCONNECTED -- socket_id: {socket_id}")
 
@@ -251,7 +249,6 @@ def assign_room(user,room):
     user_message = str(user['user_id']) + ": Go to URL " + room['url']
     print("assign_room: socket_id: " + user['socket_id'] + "    message: " + user_message)
     socketio.emit('update_event', {'message': user_message}, room=user['socket_id'])
-    # print("user_id " + str(user['user_id']) + ": Go to URL " + room['url'])
 
 
 def prune_and_sort_rooms(room_list):
@@ -314,6 +311,11 @@ def assigner():
             user_info = user_queue.get()
             user_id = user_info['user_id']
             socket_id =  user_info['socket_id']
+            name =  user_info['name']
+            email =  user_info['email']
+            password =  user_info['password']
+            entity_id =  user_info['entity_id']
+            agent =  user_info['agent']
             if user_id is None:
                 print("assigner: user_id is None")
                 break
@@ -341,9 +343,10 @@ def assigner():
 
                 # This is a new user
                 else:
-                    user = {'user_id': user_id, 'start_time': time.time(), 'room': None, 'socket_id': socket_id}
+                    user = {'user_id': user_id, 'socket_id': socket_id, 'start_time': time.time(), 'room': None,
+                            'name': name, 'email': email, 'password': password, 'entity_id': entity_id,'agent': agent}
+                    print("assigner - user " + user_id + " start_time: " + str(user['start_time']) + " room: None  socket_id: " + socket_id + "  name: " + name)
                     users[user_id] = user
-                    print("assigner - user " + str(user_id) + " start_time: " + str(user['start_time']) + " room: None  socket_id: " + str(socket_id))
                     unassignedUsers.append(user)
                     print("assigner - len(unassignedUsers) = " + str(len(unassignedUsers)))
 
