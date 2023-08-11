@@ -1,7 +1,5 @@
 import time
-from enum import Enum
-from operator import attrgetter
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 import threading
 import queue
 from flask import Flask, request, jsonify, render_template
@@ -26,11 +24,6 @@ overFillRooms = False
 urlPrefix = "http://bazaar.lti.cs.cmu.edu/room"
 nextRoomNum = 0
 
-# class RoomAssignmentPriority(Enum):
-#     leastUsers_MaxAge = 1
-#     leastUsers_MinAge = 2
-# roomPriority = RoomAssignmentPriority.leastUsers_MaxAge
-
 
 rooms = []
 availableRooms = []
@@ -38,26 +31,44 @@ roomsUnderTarget = []
 users = {}
 unassignedUsers = []
 
-# Route to handle incoming users from the web interface
+
+# This /login step is TEMPORARY to use a single HTML page to SIMULATE receive logins from multiple users.
+#     1. TEMPORARY step: Receive user_id from the request URL and send it back to the HTML page so the page can send a
+#        unique user_id with each request. In browsers, each http://<SERVER>/login/<user_id> URL will have a unique
+#        user_id value.
+#     2. PERMANENT step: Receive user data in a user_connect request. For simulation testing, all the user data except
+#        the user_id is a constant. For real world use, the "Launch OPE" button will send each data element customized
+#        for the user.
+#           -- Data:
+#                   a. user_id (unique, as received from temporary step 1)
+#                   b. name
+#                   c. email
+#                   d. password
+#                   e. entityId
+#                   f. Bazaar agent (I added this data requirement)
 @app.route('/login/<user_id>', methods=['GET', 'POST'])
 def login_get(user_id):
-    # user_queue.put(user_id)
     print("Login: received user_id " + str(user_id))
-    return render_template('lobby.html', userID=user_id)
+    return render_template('lobby.html', user_id=user_id)
 
 
 @socketio.on('user_connect')
-def handle_user_connect(user_id):
+def process_user_connect(user_data):
     socket_id = request.sid
+    user_id = user_data.get('userId')
+    name = user_data.get('name')
+    email = user_data.get('email')
+    password = user_data.get('password')
+    entity_id = user_data.get('entityId')
+    agent = user_data.get('agent')
     print(f"Client connected with socket_id: {socket_id} -- user_id: " + user_id)
-    user_info = {'user_id': str(user_id), 'socket_id': socket_id}
+    user_info = {'user_id': str(user_id), 'socket_id': str(socket_id), 'name': str(name), 'email': str(email), 'password': str(password), 'entity_id': str(entity_id), 'agent': str(agent)}
     user_queue.put(user_info)
     print("Login - user_queue length: " + str(user_queue.qsize()))
-    # emit('response_event', {'response': 'Data received successfully'})
     emit('response_event', "Data received successfully")
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def process_disconnect():
     socket_id = request.sid
     print(f"Client DISCONNECTED -- socket_id: {socket_id}")
 
@@ -73,12 +84,6 @@ def start_task(user_id):
         room_num = "room" + user_room['room_num']
         print("start_task - emitting 'task_completed', message: " + str(room_num))
         emit('task_completed', {'message': room_num}, room=request.sid)
-
-
-# Plain lobby route
-@app.route('/')
-def index():
-    return "Welcome to the Lobby! Enter 127.0.0.1:5000/login/USER_ID"
 
 
 # Shut down the consumer thread when the server stops
@@ -117,15 +122,12 @@ def new_user(user_id):
 
 
 def reassign_room(user, room):
-    # print("reassign_room - user_id " + user['user_id'] + ": RETURN to URL " + room['url'])
-    print("reassign_room message: ")
     user_message = str(user['user_id']) + ": Return to URL " + room['url']
     print("reassign_room message: " + user_message)
     socketio.emit('update_event', {'message': user_message}, room=user['socket_id'])
 
 def print_uus():
     print(unassignedUsers)
-
 
 def assign_rooms():
     global unassignedUsers
@@ -247,7 +249,6 @@ def assign_room(user,room):
     user_message = str(user['user_id']) + ": Go to URL " + room['url']
     print("assign_room: socket_id: " + user['socket_id'] + "    message: " + user_message)
     socketio.emit('update_event', {'message': user_message}, room=user['socket_id'])
-    # print("user_id " + str(user['user_id']) + ": Go to URL " + room['url'])
 
 
 def prune_and_sort_rooms(room_list):
@@ -310,6 +311,11 @@ def assigner():
             user_info = user_queue.get()
             user_id = user_info['user_id']
             socket_id =  user_info['socket_id']
+            name =  user_info['name']
+            email =  user_info['email']
+            password =  user_info['password']
+            entity_id =  user_info['entity_id']
+            agent =  user_info['agent']
             if user_id is None:
                 print("assigner: user_id is None")
                 break
@@ -337,9 +343,10 @@ def assigner():
 
                 # This is a new user
                 else:
-                    user = {'user_id': user_id, 'start_time': time.time(), 'room': None, 'socket_id': socket_id}
+                    user = {'user_id': user_id, 'socket_id': socket_id, 'start_time': time.time(), 'room': None,
+                            'name': name, 'email': email, 'password': password, 'entity_id': entity_id,'agent': agent}
+                    print("assigner - user " + user_id + " start_time: " + str(user['start_time']) + " room: None  socket_id: " + socket_id + "  name: " + name)
                     users[user_id] = user
-                    print("assigner - user " + str(user_id) + " start_time: " + str(user['start_time']) + " room: None  socket_id: " + str(socket_id))
                     unassignedUsers.append(user)
                     print("assigner - len(unassignedUsers) = " + str(len(unassignedUsers)))
 
@@ -358,7 +365,6 @@ consumer_thread.start()
 
 
 if __name__ == '__main__':
-    # socketio.run(app, debug=True, threaded=True)
     socketio.run(app, threaded=True, port=5000)
 
     # When the server is shut down, stop the consumer thread as well

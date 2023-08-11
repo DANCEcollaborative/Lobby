@@ -29,7 +29,8 @@
                     socket.on('connect', () => {
                         console.log('Connected to server');
                         // Send user data to the server when connected
-                        socket.emit('user_connect', "{{ userID }}");
+                        const userData = { userId: '{{ user_id }}', name: 'Andrew Carnegie', email: 'user@andrew.cmu.edu', password: 'fdsklasadjoiqw=', entityId: 'ope-author-practice-xvjlkkm3', agent: 'BazaarOPE2' };
+                        socket.emit('user_connect', userData);
                     });
 
                     socket.on('response_event', function(data) {
