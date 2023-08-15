@@ -5,6 +5,7 @@ dnspython==2.4.1
 eventlet==0.33.3
 Flask==2.3.2
 Flask-SocketIO==5.3.5
+Flask-SQLAlchemy==3.0.5
 greenlet==2.0.2
 gunicorn==21.2.0
 itsdangerous==2.1.2
@@ -14,4 +15,6 @@ packaging==23.1
 python-engineio==4.5.1
 python-socketio==5.8.0
 six==1.16.0
+SQLAlchemy==2.0.19
+typing_extensions==4.7.1
 Werkzeug==2.3.6
