@@ -350,8 +350,8 @@ def assigner():
                         room_id = user.room_id
                         # update_user_socket(user_id, socket_id)
                         user.socket_id = socket_id
-                        user.session.add(user)
-                        user.session.commit()
+                        users.session.add(user)
+                        users.session.commit()
                         print("assigner: user " + str(user_id) + " UPDATED socket_id: " + str(user.socket_id))
 
                         # If user already assigned to a room, reassign
