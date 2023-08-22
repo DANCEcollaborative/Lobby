@@ -280,8 +280,8 @@ def assign_room(user,room):
     # room['num_users'] = len(room['users'])
     # unassignedUsers.remove(user_id)
     user_message = str(user.user_id) + ": Go to URL " + str(room.url)
-    print("assign_room: socket_id: " + socket_id + "    message: " + user_message)
-    socketio.emit('update_event', {'message': user_message}, room=socket_id)
+    print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message)
+    socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
 
 
 def prune_and_sort_rooms(room_list):
@@ -384,7 +384,7 @@ def assigner():
                 break
             else:
                 with app.app_context():
-                    lobby_db.create_all()
+                    # lobby_db.create_all()
                     user = User.query.filter_by(user_id=user_id).first()
 
                     # If user has previously logged in
@@ -416,14 +416,14 @@ def assigner():
                         # user = {'user_id': user_id, 'socket_id': socket_id, 'start_time': time.time(), 'room': None,
                         #         'name': name, 'email': email, 'password': password, 'entity_id': entity_id,'agent': agent}
 
-                        null_room = Room.query.filter_by(room_id="room0").first()
+                        waiting_room = Room.query.filter_by(room_id="waiting_room").first()
                         user = User(user_id=user_id, name=name, email=email, password=password,
-                                    entity_id=entity_id, agent=agent, socket_id=socket_id, room=null_room,
-                                    room_id=null_room.room_id)
+                                    entity_id=entity_id, agent=agent, socket_id=socket_id, room=waiting_room,
+                                    room_id="waiting_room")
                         # user = User(user_id=user_id, name=name, email=email, password=password,
                         #             entity_id=entity_id, agent=agent, socket_id=socket_id)
                         user_created = True
-                        print("assigner - user " + user.user_id + " start_time: " + str(user.start_time) + " room: None  socket_id: " + user.socket_id + "  name: " + user.name)
+                        print("assigner - user " + user.user_id + " start_time: " + str(user.start_time) + "   room: " + "waiting_room   socket_id: " + user.socket_id + "   name: " + user.name)
                         print("assigner - time.time(): " + str(time.time()))
                         lobby_db.session.add(user)
                         lobby_db.session.commit()
@@ -432,11 +432,13 @@ def assigner():
 
             if user_created:
                 with app.app_context():
-                    unassigned_users = User.query.filter_by(room=None).order_by(User.start_time.asc()).all()
+                    unassigned_users = User.query.filter_by(room=waiting_room).order_by(User.start_time.asc()).all()
                     if len(unassignedUsers) > 0:
                         assign_rooms()
                         print_users()
                         print_room_assignments()
+                    else:
+                        print("assigner: user_created but len(unassignedUsers) == 0")
         time.sleep(1)
 
 
@@ -449,11 +451,11 @@ consumer_thread.start()
 if __name__ == '__main__':
     with app.app_context():
         lobby_db.create_all()
-        room0 = Room(room_id="room0", url="null")
-        user0 = User(user_id="null", name="null", email="null", password="null",
-                    entity_id="null", agent="null", socket_id="null", room_id="room0", room=room0)
-        lobby_db.session.add(room0)
-        lobby_db.session.add(user0)
+        waiting_room = Room(room_id="waiting_room", url="null")
+        lobby_attendant = User(user_id="lobby_attendant", name="Lobby Attendant", email="null", password="null",
+                    entity_id="null", agent="null", socket_id="null", room_id="waiting_room", room=waiting_room)
+        lobby_db.session.add(waiting_room)
+        lobby_db.session.add(lobby_attendant)
         lobby_db.session.commit()
     socketio.run(app, threaded=True, port=5000)
     # When the server is shut down, stop the consumer thread as well
