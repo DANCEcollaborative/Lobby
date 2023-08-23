@@ -257,9 +257,12 @@ def assign_new_room(num_users):
         # unassigned_users = session.query(User).filter_by(room=None).order_by(User.start_time.asc()).all()
         num_users_remaining = num_users
         while (num_users_remaining > 0) and (len(unassigned_users) > 0):
+            print("assign_new_room, len(unassigned_users): " + str(len(unassigned_users)))
+            print("assign_new_room, num_users_remaining: " + str(num_users_remaining))
             next_user = unassigned_users[0]
             # assign_room(next_user,room.id)
             assign_room(next_user,room)
+            unassigned_users.remove(next_user)
             num_users_remaining -= 1
         # rooms.append(room)
         # availableRooms.append(room)  # if no overfilling, room will soon be pruned from availableRooms
@@ -287,15 +290,12 @@ def overfill_rooms():
 
 def assign_room(user,room):
     # Send user link to user_room
-    # global unassigned_users
+    global unassigned_users
     # global lobby_db
     # with app.app_context():
-    room.users.append(user)
-    session.add(room)
-    session.commit()
-    unassigned_users.remove(user)
+    # unassigned_users.remove(user)
 
-    with app.app_context():
+    # with app.app_context():
         #     user = User.query.filter_by(user_id=user_id).first()
         #     user.room_id = room['room_name']
         #     socket_id = user.socket_id
@@ -304,9 +304,13 @@ def assign_room(user,room):
         # room['users'].append(user_id)
         # room['num_users'] = len(room['users'])
         # unassigned_users.remove(user_id)
-        user_message = str(user.user_id) + ": Go to URL " + str(room.url)
-        print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
-        socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
+    room.users.append(user)
+    lobby_db.session.add(room)
+    lobby_db.session.commit()
+    user.room_name = room.room_name
+    user_message = str(user.user_id) + ": Go to URL " + str(room.url)
+    print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
+    socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
 
 
 def prune_and_sort_rooms(room_list):
