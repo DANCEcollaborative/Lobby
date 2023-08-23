@@ -6,6 +6,7 @@ from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+# from sqlalchemy import asc
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -13,9 +14,9 @@ socketio = SocketIO(app)
 targetUsersPerRoom = 4
 minUsersPerRoom = 2
 maxUsersPerRoom = 6
-maxWaitTimeForSubOptimalAssignment = 10          # seconds
-maxWaitTimeUntilGiveUp = 60                    # seconds
-maxRoomAgeForNewUsers = 300                     # seconds
+maxWaitTimeForSubOptimalAssignment = 10        # seconds
+maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
+maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
 fillRoomsUnderTarget = True
 overFillRooms = False
 urlPrefix = "http://bazaar.lti.cs.cmu.edu/"
@@ -50,7 +51,11 @@ class Room(lobby_db.Model):
     room_name = lobby_db.Column(lobby_db.String(50))
     url = lobby_db.Column(lobby_db.String(200))
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
+    num_users = lobby_db.Column(lobby_db.Integer)
     users = lobby_db.relationship('User', back_populates='room')
+    #
+    # def num_users(self):
+    #     return len(self.users)
 
     def __repr__(self):
         return f'<Room {self.room_name}>'
@@ -205,11 +210,25 @@ def assign_new_room(num_users):
     room_name = roomPrefix + str(nextRoomNum)
     url = urlPrefix + room_name
     with app.app_context():
-        room = Room(room_name=room_name, url=url)
+        room = Room(room_name=room_name, url=url, num_users=0)
         lobby_db.session.add(room)
         lobby_db.session.commit()
         assign_up_to_n_users(room, num_users)
 
+
+def round_robin_assign_rooms_under_n_users(n_users):
+    # Assuming
+    #   -- fill rooms that are most-under-target first
+    #   -- fill one under-target room to target level before filling next under-target room
+    global unassigned_users
+    available_rooms_under_n_users = []
+    if len(unassigned_users) > 0:
+        available_rooms_under_n_users = get_sorted_available_rooms(n_users)
+    i = 0
+    with app.app_context():
+        while (i < len(available_rooms_under_n_users)) and (len(unassigned_users) > 0):
+            assign_up_to_n_users(available_rooms_under_n_users[i], n_users)
+            i += 1
 
 # def overfill_rooms():
 #     global availableRooms, unassigned_users
@@ -236,6 +255,7 @@ def assign_room(user, room):
     # Send user link to user_room
     global unassigned_user
     room.users.append(user)
+    room.num_users += 1
     user.room_name = room.room_name
     lobby_db.session.add(room)
     lobby_db.session.commit()
@@ -244,10 +264,21 @@ def assign_room(user, room):
     socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
 
 
+# 1. Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
+#    to prioritize rooms primarily by the least users and secondarily by the oldest start time.
+# 2. Select rooms that are not tool old to add new users.
+# 3. Strip waiting_room from results.
+# 4. Strip rooms with >= max_users from the results.
+
 def get_sorted_available_rooms(max_users):
     room_list = []
     with app.app_context():
-        sorted_rooms = Room.query.order_by(Room.start_time.asc()).all()
+        # sorted_rooms = Room.query.order_by(asc(Room.num_users), Room.start_time.asc()).all()
+        sorted_rooms = Room.query.order_by(Room.num_users.asc(), Room.start_time.asc()).all()
+        print("get_sorted_available_rooms:")
+        for room in sorted_rooms:
+            if room.room_name != "waiting_room":
+                print("   " + room.room_name + "  -  users: " + (str(len(room.users))))
         current_time = time.time()
         for room in sorted_rooms:
             time_diff = current_time - room.start_time.timestamp()
@@ -283,7 +314,7 @@ def print_room_assignments():
         created_rooms = Room.query.all()
         if len(created_rooms) > 0:
             for room in created_rooms:
-                print("Room " + str(room.room_name), flush=True)
+                print("Room " + str(room.room_name) + " - num_users: " + str(room.num_users), flush=True)
                 for user in room.users:
                     print("   " + user.user_id, flush=True)
         else:
