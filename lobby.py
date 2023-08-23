@@ -145,10 +145,10 @@ def shutdown_server():
     user_queue.put(None)
     consumer_thread.join()
 
-def reassign_room(user_id, room):
+def reassign_room(user, room):
     with app.app_context():
-        user = User.query.filter_by(user_id=user_id).first()
-        user_message = str(user.user_id) + ": Return to URL " + room['url']
+        # user = User.query.filter_by(user_id=user_id).first()
+        user_message = str(user.user_id) + ": Return to URL " + room.url
         print("reassign_room message: " + user_message, flush=True)
         print("reassign_room socket_id: " + str(user.socket_id), flush=True)
         socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
@@ -458,7 +458,7 @@ def assigner():
                         # If user already assigned to a room, reassign
                         if room_id is not None and room_name != "waiting_room":
                             print("assigner: user " + str(user_id) + " already has room " + room.room_name, flush=True)
-                            reassign_room(user_id, room.room_name)
+                            reassign_room(user, room)
 
                         # else previously logged-in user should already be in the unassigned_users list
                         #      -- but double-checking as a failsafe
