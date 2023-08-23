@@ -293,6 +293,7 @@ def assign_room(user,room):
     room.users.append(user)
     session.add(room)
     session.commit()
+    unassigned_users.remove(user)
 
     with app.app_context():
         #     user = User.query.filter_by(user_id=user_id).first()
