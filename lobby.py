@@ -305,9 +305,9 @@ def assign_room(user,room):
         # room['num_users'] = len(room['users'])
         # unassigned_users.remove(user_id)
     room.users.append(user)
+    user.room_name = room.room_name
     lobby_db.session.add(room)
     lobby_db.session.commit()
-    user.room_name = room.room_name
     user_message = str(user.user_id) + ": Go to URL " + str(room.url)
     print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
     socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
