@@ -358,14 +358,15 @@ def get_room_by_id(room_name):
 
 def print_room_assignments():
     # global rooms
-    created_rooms = Room.query.all()
-    if len(created_rooms) > 0:
-        for room in created_rooms:
-            print("Room " + str(room.room_name), flush=True)
-            for user in room.users:
-                print("   " + user.user_id, flush=True)
-    else:
-        print("No rooms yet", flush=True)
+    with app.app_context():
+        created_rooms = Room.query.all()
+        if len(created_rooms) > 0:
+            for room in created_rooms:
+                print("Room " + str(room.room_name), flush=True)
+                for user in room.users:
+                    print("   " + user.user_id, flush=True)
+        else:
+            print("No rooms yet", flush=True)
 
 def print_users():
     # global rooms
@@ -395,11 +396,11 @@ def assigner():
     if not lobby_initialized:
         with app.app_context():
             session = lobby_db.session
-            print("assigner inside 'with'", flush=True)
+            # print("assigner inside 'with'", flush=True)
             lobby_db.drop_all()
             lobby_db.create_all()
             waiting_room = Room(room_name="waiting_room", url="null")
-            print("assigner #1, waiting_room - room_name: " + waiting_room.room_name, flush=True)
+            print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
             # lobby_attendant = User(user_id="lobby_attendant", n
             # ame="Lobby Attendant", email="null", password="null",
             #                        entity_id="null", agent="null", socket_id="null", room_name="waiting_room",
@@ -473,7 +474,6 @@ def assigner():
                                     room_name=waiting_room.room_name)
                         # user = User(user_id=user_id, name=name, email=email, password=password,
                         #             entity_id=entity_id, agent=agent, socket_id=socket_id)
-                        user_created = True
                         print("assigner - user " + user.user_id + " start_time: " + str(user.start_time) + "   room_name: " + waiting_room.room_name + "   socket_id: " + user.socket_id + "   name: " + user.name, flush=True)
                         print("assigner - time.time(): " + str(time.time()), flush=True)
                         session.add(user)
@@ -481,20 +481,17 @@ def assigner():
                         # unassigned_users.append(user_id)
                         # print("assigner - len(unassigned_users) = " + str(len(unassigned_users)))
 
-        if user_created:
-            with app.app_context():
-                unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(User.start_time.asc()).all()
-                if len(unassigned_users) > 0:
-                    # print("assigner -- unassigned_users: " + unassigned_users)
-                    # print("assigner -- unassigned_users: " + *unassigned_users)
-                    print("assigner -- unassigned_users: ", flush=True)
-                    for i in range(len(unassigned_users)):
-                        print("  user.id: " + str(unassigned_users[i]), flush=True)
-                    assign_rooms()
-                    print_users()
-                    print_room_assignments()
-        else:
-            print("assigner: user_created but len(unassigned_users) == 0", flush=True)
+        with app.app_context():
+            unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(User.start_time.asc()).all()
+        if len(unassigned_users) > 0:
+            # with app.app_context():
+            print("assigner -- unassigned_users: ", flush=True)
+            for i in range(len(unassigned_users)):
+                print("  user.id: " + str(unassigned_users[i]), flush=True)
+            assign_rooms()
+            print_users()
+            print_room_assignments()
+
         time.sleep(1)
 
 
