@@ -157,11 +157,12 @@ def assign_rooms():
     global unassigned_users
     if len(unassigned_users) > 0:
         if fillRoomsUnderTarget:
-            fill_rooms_under_target()
+            assign_rooms_under_n_users(targetUsersPerRoom)
         if len(unassigned_users) >= targetUsersPerRoom:
             assign_new_rooms(targetUsersPerRoom)
         if (len(unassigned_users) > 0) and overFillRooms:
-            overfill_rooms()
+            assign_rooms_under_n_users(maxUsersPerRoom)
+            # overfill_rooms()
         if len(unassigned_users) > 0:
             users_due_for_suboptimal = get_users_due_for_suboptimal()
             # Expand to the following: If any users_due_for_suboptimal and enough unassigned
@@ -170,36 +171,38 @@ def assign_rooms():
     unassigned_users = prune_users()       # tell users who have been waiting too long to come back later
 
 
-
-# If filling rooms that are under target before adding new rooms
-def fill_rooms_under_target():
+def assign_rooms_under_n_users(n_users):
     # Assuming
     #   -- fill rooms that are most-under-target first
     #   -- fill one under-target room to target level before filling next under-target room
-    global availableRooms, unassigned_users
-    availableRooms = prune_rooms(availableRooms)
-    rooms_under_target = get_rooms_under_target()
+    global unassigned_users
+    # with app.app_context():
+    #     unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(User.start_time.asc()).all()
+    available_rooms_under_n_users = []
+    if len(unassigned_users) > 0:
+        available_rooms_under_n_users = get_sorted_available_rooms(n_users)
     i = 0
-    while (i < len(rooms_under_target)) and (len(unassigned_users) > 0):
-        assign_up_to_target(rooms_under_target[i])
-        i += 1
+    with app.app_context():
+        while (i < len(available_rooms_under_n_users)) and (len(unassigned_users) > 0):
+            assign_up_to_n_users(available_rooms_under_n_users[i],n_users)
+            i += 1
 
 # FIX THIS !!!
-def get_rooms_under_target():
-    global availableRooms
-    if len(availableRooms) == 0:
-        return availableRooms
-    availableRooms = prune_and_sort_rooms(availableRooms)
-    rooms_under_target = []
-    i = 0
-    while i < len(availableRooms):
-        if availableRooms[i]['num_users'] < targetUsersPerRoom:
-            rooms_under_target.append(availableRooms[i])
-        i += 1
-    if len(rooms_under_target) > 0:
-        return sort_rooms(rooms_under_target)
-    else:
-        return rooms_under_target
+# def get_rooms_under_target():
+#     global availableRooms
+#     if len(availableRooms) == 0:
+#         return availableRooms
+#     availableRooms = prune_and_sort_rooms(availableRooms)
+#     rooms_under_target = []
+#     i = 0
+#     while i < len(availableRooms):
+#         if availableRooms[i]['num_users'] < targetUsersPerRoom:
+#             rooms_under_target.append(availableRooms[i])
+#         i += 1
+#     if len(rooms_under_target) > 0:
+#         return sort_rooms(rooms_under_target)
+#     else:
+#         return rooms_under_target
 
 def get_users_due_for_suboptimal():
     global unassigned_users
@@ -221,22 +224,23 @@ def get_users_due_for_suboptimal():
             i += 1
     return users_due_for_suboptimal
 
-# FIX THIS !!!
-def assign_up_to_target(room):
+def assign_up_to_n_users(room, n_users):
     global unassigned_users
-    while (room['num_users'] < targetUsersPerRoom) and (len(unassigned_users) > 0):
-        assign_room(unassigned_users[0], room)
+    # with app.app_context():
+    while (len(room.users) < n_users) and (len(unassigned_users) > 0):
+        user = unassigned_users[0]
+        assign_room(user, room)
+        unassigned_users.remove(user)
 
-def add_to_room_under_target (room):
-    global unassigned_users
-    with app.app_context():
-        room_users = room['users']
-        num_under_target = targetUsersPerRoom - len(room_users)
-        while (len(unassigned_users) > 0) and (num_under_target > 0):
-            user_id = unassigned_users[0]
-            assign_room(user_id,room)
-            print("user_id " + str(user_id) + ": assigned to room_under_target " + room['url'], flush=True)
-            num_under_target -= 1
+# def add_to_room_up_to_n_users (room, n_users):
+#     global unassigned_users
+#     with app.app_context():
+#         num_under_n = n_users - len(room.users)
+#         while (len(unassigned_users) > 0) and (num_under_max > 0):
+#             user_id = unassigned_users[0]
+#             assign_room(user_id,room)
+#             print("user_id " + str(user_id) + ": assigned to room_under_target " + room['url'], flush=True)
+#             num_under_n -= 1
 
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
@@ -245,7 +249,8 @@ def assign_new_rooms(num_users_per_room):
 
 def assign_new_room(num_users):
     # url = ...        # CREATE SCHEME FOR ASSIGNING ROOM URLs
-    global unassigned_users, rooms, availableRooms, nextRoomNum
+    # global unassigned_users, rooms, availableRooms, nextRoomNum
+    global nextRoomNum
     nextRoomNum += 1
     room_name = roomPrefix + str(nextRoomNum)
     url = urlPrefix + room_name
@@ -253,57 +258,34 @@ def assign_new_room(num_users):
         room = Room(room_name=room_name, url=url)
         lobby_db.session.add(room)
         lobby_db.session.commit()
-        # room = {'room_name': room_name, 'url': url, 'start_time': time.time(), 'users': [], 'num_users': 0}
-        # unassigned_users = session.query(User).filter_by(room=None).order_by(User.start_time.asc()).all()
-        num_users_remaining = num_users
-        while (num_users_remaining > 0) and (len(unassigned_users) > 0):
-            print("assign_new_room, len(unassigned_users): " + str(len(unassigned_users)))
-            print("assign_new_room, num_users_remaining: " + str(num_users_remaining))
-            next_user = unassigned_users[0]
-            # assign_room(next_user,room.id)
-            assign_room(next_user,room)
-            unassigned_users.remove(next_user)
-            num_users_remaining -= 1
-        # rooms.append(room)
-        # availableRooms.append(room)  # if no overfilling, room will soon be pruned from availableRooms
+        assign_up_to_n_users(room,num_users)
 
-def overfill_rooms():
-    global availableRooms, unassigned_users
-    availableRooms = prune_and_sort_rooms(availableRooms)
-    if len(availableRooms) == 0:
-        return
-    next_user_id = unassigned_users[0]  # users are listed in increasing start_time order
-    with app.app_context():
-        next_user = User.query.filter_by(user_id=next_user_id).first()
-        longest_user_wait = time.time() - next_user.start_time
-        while (longest_user_wait > maxWaitTimeForSubOptimalAssignment) and (len(availableRooms) > 0):
-            next_room = availableRooms[0]
-            assign_room(next_user_id, next_room)
-            availableRooms = prune_and_sort_rooms(availableRooms)
-            if len(unassigned_users) > 0:
-                next_user_id = unassigned_users[0]
-                # with app.app_context():
-                next_user = User.query.filter_by(user_id=next_user_id).first()
-                longest_user_wait = time.time() - next_user.start_time
-            else:
-                longest_user_wait = 0   # No more users waiting
+
+# def overfill_rooms():
+#     global availableRooms, unassigned_users
+#     availableRooms = prune_and_sort_rooms(availableRooms)
+#     if len(availableRooms) == 0:
+#         return
+#     next_user_id = unassigned_users[0]  # users are listed in increasing start_time order
+#     with app.app_context():
+#         next_user = User.query.filter_by(user_id=next_user_id).first()
+#         longest_user_wait = time.time() - next_user.start_time
+#         while (longest_user_wait > maxWaitTimeForSubOptimalAssignment) and (len(availableRooms) > 0):
+#             next_room = availableRooms[0]
+#             assign_room(next_user_id, next_room)
+#             availableRooms = prune_and_sort_rooms(availableRooms)
+#             if len(unassigned_users) > 0:
+#                 next_user_id = unassigned_users[0]
+#                 # with app.app_context():
+#                 next_user = User.query.filter_by(user_id=next_user_id).first()
+#                 longest_user_wait = time.time() - next_user.start_time
+#             else:
+#                 longest_user_wait = 0   # No more users waiting
 
 def assign_room(user,room):
     # Send user link to user_room
     global unassigned_users
     # global lobby_db
-    # with app.app_context():
-    # unassigned_users.remove(user)
-
-    # with app.app_context():
-        #     user = User.query.filter_by(user_id=user_id).first()
-        #     user.room_id = room['room_name']
-        #     socket_id = user.socket_id
-        #     lobby_db.session.add(user)
-        #     lobby_db.session.commit()
-        # room['users'].append(user_id)
-        # room['num_users'] = len(room['users'])
-        # unassigned_users.remove(user_id)
     room.users.append(user)
     user.room_name = room.room_name
     lobby_db.session.add(room)
@@ -313,32 +295,47 @@ def assign_room(user,room):
     socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
 
 
-def prune_and_sort_rooms(room_list):
-    pruned_rooms = prune_rooms(room_list)
-    if len(pruned_rooms) != 0:
-        return sort_rooms(pruned_rooms)
+# def prune_and_sort_rooms(room_list):
+#     pruned_rooms = prune_rooms(room_list)
+#     if len(pruned_rooms) != 0:
+#         return sort_rooms(pruned_rooms)
 
-def prune_rooms(room_list):
-    num_rooms = len(room_list)
-    i = 0
-    while i < num_rooms:
-        room = room_list[i]
-        room_age = time.time() - room['start_time']
-        room_users = room['users']
-        room_slots_available = maxUsersPerRoom - len(room_users)
-        # Prune rooms that are too old for new users or that are filled to max
-        if (room_age >= maxRoomAgeForNewUsers) or (room_slots_available <= 0):
-            del room_list[i]
-            num_rooms = len(room_list)
-        else:           # increment room counter 'i' only if current room was not deleted
-            i += 1
+# def prune_rooms(room_list):
+#     num_rooms = len(room_list)
+#     i = 0
+#     while i < num_rooms:
+#         room = room_list[i]
+#         room_age = time.time() - room['start_time']
+#         room_users = room['users']
+#         room_slots_available = maxUsersPerRoom - len(room_users)
+#         # Prune rooms that are too old for new users or that are filled to max
+#         if (room_age >= maxRoomAgeForNewUsers) or (room_slots_available <= 0):
+#             del room_list[i]
+#             num_rooms = len(room_list)
+#         else:           # increment room counter 'i' only if current room was not deleted
+#             i += 1
+#     return room_list
+
+def get_sorted_available_rooms(max_users):
+    room_list = []
+    with app.app_context():
+        # rooms = Room.query.all()
+        # sorted_rooms = Room.query.order_by(Room.start_time.timestamp.asc()).all()
+        sorted_rooms = Room.query.order_by(Room.start_time.asc()).all()
+        current_time = time.time()
+        for room in sorted_rooms:
+            time_diff = current_time - room.start_time.timestamp()
+            if (time_diff < maxRoomAgeForNewUsers) and (room.room_name != "waiting_room"):
+                if len(room.users) < max_users:
+                    room_list.append(room)
     return room_list
+
 
 # Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
 #   to prioritize rooms with the least users, and secondarily with the oldest start times
-def sort_rooms(room_list):
-    s = sorted(room_list, key=itemgetter('start_time'))
-    return sorted(s,key=itemgetter('num_users'))
+# def sort_rooms(room_list):
+#     s = sorted(room_list, key=itemgetter('start_time'))
+#     return sorted(s,key=itemgetter('num_users'))
 
 def prune_users():
     global unassigned_users
@@ -353,13 +350,13 @@ def prune_users():
                 unassigned_users.remove(user)
     return unassigned_users
 
-def get_room_by_id(room_name):
-    room = None
-    num_rooms = len(rooms)
-    for i in range(num_rooms):
-        if rooms[i]['room_name'] == room_name:
-            return rooms[i]
-    return room
+# def get_room_by_id(room_name):
+#     room = None
+#     num_rooms = len(rooms)
+#     for i in range(num_rooms):
+#         if rooms[i]['room_name'] == room_name:
+#             return rooms[i]
+#     return room
 
 def print_room_assignments():
     # global rooms
