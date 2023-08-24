@@ -24,6 +24,7 @@ overFillRooms = True
 urlPrefix = "http://bazaar.lti.cs.cmu.edu/"
 roomPrefix = "room"
 nextRoomNum = 0
+
 lobby_initialized = False
 unassigned_users = []
 
