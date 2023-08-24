@@ -21,7 +21,8 @@ maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
 maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
 fillRoomsUnderTarget = True
 overFillRooms = True
-urlPrefix = "http://bazaar.lti.cs.cmu.edu/"
+# urlPrefix = "https://bazaar.lti.cs.cmu.edu/"
+urlPrefix = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
 roomPrefix = "room"
 nextRoomNum = 0
 
@@ -118,7 +119,8 @@ def shutdown_server():
 
 def reassign_room(user, room):
     with app.app_context():
-        user_message = str(user.user_id) + ": Return to URL " + room.url
+        # user_message = str(user.user_id) + ": Return to URL " + room.url
+        user_message = str(user.user_id) + ", return to your room link: " + str(room.url)
         print("reassign_room message: " + user_message, flush=True)
         print("reassign_room socket_id: " + str(user.socket_id), flush=True)
         socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
@@ -204,7 +206,8 @@ def assign_new_room(num_users):
     global nextRoomNum, session
     nextRoomNum += 1
     room_name = roomPrefix + str(nextRoomNum)
-    url = urlPrefix + room_name
+    # url = urlPrefix + room_name
+    url = urlPrefix
     with app.app_context():
         room = Room(room_name=room_name, url=url, num_users=0)
         session.add(room)
@@ -224,9 +227,9 @@ def assign_room(user, room):
     session.add(room)
     session.commit()
     if room.room_name != "waiting_room":
-        user_message = str(user.user_id) + ": Go to URL " + str(room.url)
+        user_message = str(user.user_id) + ", here's your room link: " + str(room.url)
         print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
-        socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
+        socketio.emit('update_event', {'message': user_message, 'url': room.url}, room=user.socket_id)
 
 
 # 1. Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
