@@ -13,12 +13,12 @@ socketio = SocketIO(app)
 
 targetUsersPerRoom = 4
 minUsersPerRoom = 2
-maxUsersPerRoom = 6
+maxUsersPerRoom = 5
 maxWaitTimeForSubOptimalAssignment = 10        # seconds
 maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
 maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
 fillRoomsUnderTarget = True
-overFillRooms = False
+overFillRooms = True
 urlPrefix = "http://bazaar.lti.cs.cmu.edu/"
 roomPrefix = "room"
 nextRoomNum = 0
@@ -145,7 +145,10 @@ def assign_rooms():
         if len(unassigned_users) >= targetUsersPerRoom:
             assign_new_rooms(targetUsersPerRoom)
         if (len(unassigned_users) > 0) and overFillRooms:
-            assign_rooms_under_n_users(maxUsersPerRoom)
+            users_due_for_suboptimal = get_users_due_for_suboptimal()
+            num_users_due_for_suboptimal = len(users_due_for_suboptimal)
+            if (num_users_due_for_suboptimal) > 0 and (num_users_due_for_suboptimal < minUsersPerRoom):
+                assign_rooms_under_n_users(maxUsersPerRoom)
         if len(unassigned_users) > 0:
             users_due_for_suboptimal = get_users_due_for_suboptimal()
             # >>>>>>>>>> Expand to the following: If any users_due_for_suboptimal and enough unassigned <<<<<<<<<
@@ -299,12 +302,6 @@ def get_sorted_available_rooms(max_users):
     return room_list
 
 
-# Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
-#   to prioritize rooms with the least users, and secondarily with the oldest start times
-# def sort_rooms(room_list):
-#     s = sorted(room_list, key=itemgetter('start_time'))
-#     return sorted(s,key=itemgetter('num_users'))
-
 def prune_users():
     global unassigned_users
     # for user_id in unassigned_users:
@@ -316,6 +313,10 @@ def prune_users():
                 print("prune_users: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
                 socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
                 unassigned_users.remove(user)
+                User.query.filter(User.id == user.id).delete()
+                waiting_room = Room.query.filter_by(room_name="waiting_room").first()
+                waiting_room.num_users -= 1
+                session.commit()
     return unassigned_users
 
 
@@ -355,8 +356,6 @@ def update_user_socket(user_id, socket_id):
 # Worker function for the consumer
 def assigner():
     global lobby_db, lobby_initialized, waiting_room, lobby_attendant, unassigned_users, session
-
-    print("\n\n")
     user_created = False
     if not lobby_initialized:
         with app.app_context():
@@ -432,11 +431,12 @@ def assigner():
         with app.app_context():
             unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(User.start_time.asc()).all()
         if len(unassigned_users) > 0:
+            assign_rooms()
+            # print_users()
+            print("\n\n")
             print("assigner -- unassigned_users: ", flush=True)
             for i in range(len(unassigned_users)):
                 print("  user.id: " + str(unassigned_users[i]), flush=True)
-            assign_rooms()
-        # print_users()
             print_room_assignments()
 
         time.sleep(1)
