@@ -359,8 +359,8 @@ def assigner():
 
                         # else previously logged-in user should already be in the unassigned_users list
                         #      -- but double-checking as a failsafe
-                        elif user_id not in unassigned_users:
-                            unassigned_users.append(user_id)
+                        elif user not in unassigned_users:
+                            unassigned_users.append(user)
 
                     # This is a new user
                     else:
