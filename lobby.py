@@ -6,10 +6,12 @@ from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
-# from sqlalchemy import asc
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+
+# Queue to pass incoming users
+user_queue = queue.Queue()
 
 targetUsersPerRoom = 4
 minUsersPerRoom = 2
@@ -23,26 +25,14 @@ urlPrefix = "http://bazaar.lti.cs.cmu.edu/"
 roomPrefix = "room"
 nextRoomNum = 0
 lobby_initialized = False
-waiting_room = None
-lobby_attendant = None
-
-
-rooms = []
-availableRooms = []
-roomsUnderTarget = []
 unassigned_users = []
-
-session = None
-
-# Queue to pass incoming users
-user_queue = queue.Queue()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] =\
         'postgresql://postgres:testpwd@lobby_db:5432/lobby_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 lobby_db = SQLAlchemy(app)
+session = None
 
 
 class Room(lobby_db.Model):
@@ -53,9 +43,6 @@ class Room(lobby_db.Model):
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     num_users = lobby_db.Column(lobby_db.Integer)
     users = lobby_db.relationship('User', back_populates='room')
-    #
-    # def num_users(self):
-    #     return len(self.users)
 
     def __repr__(self):
         return f'<Room {self.room_name}>'
@@ -123,7 +110,6 @@ def process_disconnect():
     print(f"Client DISCONNECTED -- socket_id: {socket_id}", flush=True)
 
 
-# Shut down the consumer thread when the server stops
 def shutdown_server():
     user_queue.put(None)
     consumer_thread.join()
@@ -201,7 +187,6 @@ def get_users_due_for_suboptimal():
 
 def assign_up_to_n_users(room, n_users):
     global unassigned_users
-    # with app.app_context():
     while (len(room.users) < n_users) and (len(unassigned_users) > 0):
         user = unassigned_users[0]
         assign_room(user, room)
@@ -215,57 +200,19 @@ def assign_new_rooms(num_users_per_room):
 
 
 def assign_new_room(num_users):
-    # url = ...        # CREATE SCHEME FOR ASSIGNING ROOM URLs
-    # global unassigned_users, rooms, availableRooms, nextRoomNum
-    global nextRoomNum
+    global nextRoomNum, session
     nextRoomNum += 1
     room_name = roomPrefix + str(nextRoomNum)
     url = urlPrefix + room_name
     with app.app_context():
         room = Room(room_name=room_name, url=url, num_users=0)
-        lobby_db.session.add(room)
-        lobby_db.session.commit()
+        session.add(room)
+        session.commit()
         assign_up_to_n_users(room, num_users)
 
 
-def round_robin_assign_rooms_under_n_users(n_users):
-    # Assuming
-    #   -- fill rooms that are most-under-target first
-    #   -- fill one under-target room to target level before filling next under-target room
-    global unassigned_users
-    available_rooms_under_n_users = []
-    if len(unassigned_users) > 0:
-        available_rooms_under_n_users = get_sorted_available_rooms(n_users)
-    i = 0
-    with app.app_context():
-        while (i < len(available_rooms_under_n_users)) and (len(unassigned_users) > 0):
-            assign_up_to_n_users(available_rooms_under_n_users[i], n_users)
-            i += 1
-
-# def overfill_rooms():
-#     global availableRooms, unassigned_users
-#     availableRooms = prune_and_sort_rooms(availableRooms)
-#     if len(availableRooms) == 0:
-#         return
-#     next_user_id = unassigned_users[0]  # users are listed in increasing start_time order
-#     with app.app_context():
-#         next_user = User.query.filter_by(user_id=next_user_id).first()
-#         longest_user_wait = time.time() - next_user.start_time
-#         while (longest_user_wait > maxWaitTimeForSubOptimalAssignment) and (len(availableRooms) > 0):
-#             next_room = availableRooms[0]
-#             assign_room(next_user_id, next_room)
-#             availableRooms = prune_and_sort_rooms(availableRooms)
-#             if len(unassigned_users) > 0:
-#                 next_user_id = unassigned_users[0]
-#                 # with app.app_context():
-#                 next_user = User.query.filter_by(user_id=next_user_id).first()
-#                 longest_user_wait = time.time() - next_user.start_time
-#             else:
-#                 longest_user_wait = 0   # No more users waiting
-
 def assign_room(user, room):
-    # Send user link to user_room
-    global unassigned_user
+    global unassigned_users, session
     user.room_name = room.room_name
     room.users.append(user)
     room.num_users += 1
@@ -290,9 +237,7 @@ def assign_room(user, room):
 def get_sorted_available_rooms(max_users):
     room_list = []
     with app.app_context():
-        # sorted_rooms = Room.query.order_by(asc(Room.num_users), Room.start_time.asc()).all()
         sorted_rooms = Room.query.order_by(Room.num_users.asc(), Room.start_time.asc()).all()
-        # print("get_sorted_available_rooms:")
         for room in sorted_rooms:
             if room.room_name != "waiting_room":
                 print("   " + room.room_name + "  -  users: " + (str(len(room.users))))
@@ -312,13 +257,13 @@ def get_sorted_available_rooms(max_users):
 
 
 def prune_users():
-    global unassigned_users
-    # for user_id in unassigned_users:
+    global unassigned_users, session
     for user in unassigned_users:
         with app.app_context():
-            #     user = User.query.filter_by(user_id=user_id).first()
             if (time.time() - user.start_time.timestamp()) >= maxWaitTimeUntilGiveUp:
-                user_message = str(user.user_id) + ": I'm sorry. There are not enough other users logged in right now to start a session. Please try again later."
+                user_message = str(user.user_id) + \
+                    ": I'm sorry. There are not enough other users logged in right now to start a session. \
+                    Please try again later."
                 print("prune_users: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
                 socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
                 unassigned_users.remove(user)
@@ -330,7 +275,6 @@ def prune_users():
 
 
 def print_room_assignments():
-    # global rooms
     with app.app_context():
         created_rooms = Room.query.all()
         if len(created_rooms) > 0:
@@ -352,20 +296,8 @@ def print_users():
             print("No rooms yet", flush=True)
 
 
-def update_user_socket(user_id, socket_id):
-    global session
-    with app.app_context():
-        #  lobby_db.create_all()
-        user = User.query.filter_by(user_id=user_id).first()
-        user.socket_id = socket_id
-        session.add(user)
-        session.commit()
-
-
-# Worker function for the consumer
 def assigner():
-    global lobby_db, lobby_initialized, waiting_room, lobby_attendant, unassigned_users, session
-    user_created = False
+    global lobby_db, lobby_initialized, unassigned_users, session
     if not lobby_initialized:
         with app.app_context():
             session = lobby_db.session
@@ -377,7 +309,6 @@ def assigner():
             session.commit()
             lobby_initialized = True
     while True:
-        # print("Entering assigner", flush=True)
         while not user_queue.empty():
             print("assigner: queue not empty", flush=True)
             user_info = user_queue.get()
@@ -400,20 +331,22 @@ def assigner():
 
                     # If user has previously logged in
                     if user is not None:
-                        print("assigner: user " + str(user_id) + " has previously logged in. NEW socket_id: " + str(socket_id), flush=True)
+                        print("assigner: user " + str(user_id) + " has previously logged in. NEW socket_id: "
+                              + str(socket_id), flush=True)
                         room_id = user.room_id
                         room = Room.query.get(room_id)
                         room_name = room.room_name
                         print("assigner; user is not none - room_name: " + room_name, flush=True)
-                        print("                   start_time: " + str(user.start_time) + "  room: " + \
-                              str(user.room_id) + "  room_name: " + room.room_name + "  OLD socket_id: " + \
+                        print("                   start_time: " + str(user.start_time) + "  room: " +
+                              str(user.room_id) + "  room_name: " + room.room_name + "  OLD socket_id: " +
                               user.socket_id + "  name: " + user.name, flush=True)
                         room_id = user.room_id
                         # update_user_socket(user_id, socket_id)
                         user.socket_id = socket_id
                         session.add(user)
                         session.commit()
-                        print("assigner: user " + str(user_id) + " UPDATED socket_id: " + str(user.socket_id), flush=True)
+                        print("assigner: user " + str(user_id) + " UPDATED socket_id: " + str(user.socket_id),
+                              flush=True)
 
                         # If user already assigned to a room, reassign
                         if room_id is not None and room_name != "waiting_room":
@@ -431,17 +364,16 @@ def assigner():
                         user = User(user_id=user_id, name=name, email=email, password=password,
                                     entity_id=entity_id, agent=agent, socket_id=socket_id, room=waiting_room,
                                     room_name=waiting_room.room_name)
-                        assign_room(user,waiting_room)
-                        print("assigner - user " + user.user_id + " start_time: " + str(user.start_time) + "   room_name: " + waiting_room.room_name + "   socket_id: " + user.socket_id + "   name: " + user.name, flush=True)
+                        assign_room(user, waiting_room)
+                        print("assigner - user " + user.user_id + " start_time: " + str(user.start_time) +
+                              "   room_name: " + waiting_room.room_name + "   socket_id: " + user.socket_id +
+                              "   name: " + user.name, flush=True)
                         print("assigner - time.time(): " + str(time.time()), flush=True)
-                        # session.add(user)
-                        # session.commit()
 
         with app.app_context():
             unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(User.start_time.asc()).all()
         if len(unassigned_users) > 0:
             assign_rooms()
-            # print_users()
             print("\n\n")
             print("assigner -- unassigned_users: ", flush=True)
             for i in range(len(unassigned_users)):
@@ -451,7 +383,6 @@ def assigner():
         time.sleep(1)
 
 
-# Create and start the consumer thread
 consumer_thread = threading.Thread(target=assigner)
 consumer_thread.start()
 
@@ -459,5 +390,4 @@ consumer_thread.start()
 if __name__ == '__main__':
     session = lobby_db.session
     socketio.run(app, threaded=True, port=5000)
-    # When the server is shut down, stop the consumer thread as well
     shutdown_server()
