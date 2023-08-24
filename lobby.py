@@ -140,27 +140,36 @@ def reassign_room(user, room):
 def assign_rooms():
     global unassigned_users
     if len(unassigned_users) > 0:
+
+        # Fill rooms that have less than the target number of users
         if fillRoomsUnderTarget:
             assign_rooms_under_n_users(targetUsersPerRoom)
+
+        # Fill rooms with the target number of users
         if len(unassigned_users) >= targetUsersPerRoom:
             assign_new_rooms(targetUsersPerRoom)
+
+        # Check for any users waiting long enough that they should get a suboptimal assignment
+        users_due_for_suboptimal = get_users_due_for_suboptimal()
+        num_users_due_for_suboptimal = len(users_due_for_suboptimal)
+
+        # Overfill rooms if there are not enough unassigned users to create a new room
         if (len(unassigned_users) > 0) and overFillRooms:
-            users_due_for_suboptimal = get_users_due_for_suboptimal()
-            num_users_due_for_suboptimal = len(users_due_for_suboptimal)
-            if (len(users_due_for_suboptimal) > 0) and (len(unassigned_users) < minUsersPerRoom):
+            if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) < minUsersPerRoom):
                 assign_rooms_under_n_users(maxUsersPerRoom)
+
+        # Create a new room, even with less than the target number of users, if there are enough unassigned users
         if len(unassigned_users) > 0:
-            users_due_for_suboptimal = get_users_due_for_suboptimal()
-            # >>>>>>>>>> Expand to the following: If any users_due_for_suboptimal and enough unassigned <<<<<<<<<
-            if (len(users_due_for_suboptimal) > 0) and (len(unassigned_users) >= minUsersPerRoom):
-                assign_new_room(len(users_due_for_suboptimal))
+            if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) >= minUsersPerRoom):
+                assign_new_room(targetUsersPerRoom)
+
     unassigned_users = prune_users()       # tell users who have been waiting too long to come back later
 
 
 def assign_rooms_under_n_users(n_users):
     # Assuming
-    #   -- fill rooms that are most-under-target first
-    #   -- fill one under-target room to target level before filling next under-target room
+    #   -- assign to rooms that are most-under n-users first
+    #   -- fill one room to n-users before assigning to next room
     global unassigned_users
     available_rooms_under_n_users = []
     if len(unassigned_users) > 0:
