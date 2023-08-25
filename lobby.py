@@ -1,7 +1,10 @@
 import os
 import time
+from datetime import datetime
 import threading
 import queue
+import json
+import requests
 from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
@@ -23,8 +26,13 @@ fillRoomsUnderTarget = True
 overFillRooms = True
 # urlPrefix = "https://bazaar.lti.cs.cmu.edu/"
 urlPrefix = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
+sessionRequestPrefix = 'https://ope.sailplatform.org/api/v1/opesession/'
 roomPrefix = "room"
 nextRoomNum = 0
+moduleSlug = 'ope-author-practice-xvjlkkm3'
+opeBotNamespace = 'default'
+opeBotName = 'bazaar-lti-at-cs-cmu-edu'
+opeBotUsername = 'user-at-andrew-cmu-edu'  # UPDATE THIS ???
 
 lobby_initialized = False
 unassigned_users = []
@@ -202,12 +210,49 @@ def assign_new_rooms(num_users_per_room):
         assign_new_room(num_users_per_room)
 
 
+def request_session(room_name):
+    url = sessionRequestPrefix + moduleSlug + "/" + room_name
+    current_time = datetime.now()
+    data = {
+        'startTime': current_time.strftime("%Y-%m-%dT%H:%M:%S-%z:%Z"),
+        'moduleSlug': moduleSlug,
+        'opeBotRef': {
+            'namespace': opeBotNamespace,
+            'name': opeBotName
+        },
+        'opeUsersRef': [
+            {
+                'namespace': moduleSlug,
+                'name': opeBotUsername
+            }
+        ]
+    }
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        result = response_data.get('result')
+        print("request_session: POST successful")
+        print("request_session, result: " + str(result))
+        return str(result)
+    else:
+        print("request_session: POST failed -- response code " + str(response.status_code))
+        return None
+
+
 def assign_new_room(num_users):
     global nextRoomNum, session
+
+    # {This will be replaced by the result of request_session(). }
     nextRoomNum += 1
     room_name = roomPrefix + str(nextRoomNum)
     # url = urlPrefix + room_name
     url = urlPrefix
+
+    # ??? WILL I GET A ROOM NAME QUICKLY ENOUGH FROM REQUESTING A SESSION ???
+    future_room_name = request_session(room_name)
+
     with app.app_context():
         room = Room(room_name=room_name, url=url, num_users=0)
         session.add(room)
