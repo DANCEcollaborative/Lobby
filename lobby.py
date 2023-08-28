@@ -5,6 +5,7 @@ import threading
 import queue
 import json
 import requests
+import re
 from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
@@ -27,6 +28,7 @@ overFillRooms = True
 # urlPrefix = "https://bazaar.lti.cs.cmu.edu/"
 urlPrefix = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
 sessionRequestPrefix = 'https://ope.sailplatform.org/api/v1/opesession/'
+userRequestPrefix = 'https://ope.sailplatform.org/api/v1/opeusers/'
 roomPrefix = "room"
 nextRoomNum = 0
 moduleSlug = 'ope-author-practice-xvjlkkm3'
@@ -50,6 +52,9 @@ class Room(lobby_db.Model):
     id = lobby_db.Column(lobby_db.Integer, primary_key=True)
     room_name = lobby_db.Column(lobby_db.String(50))
     url = lobby_db.Column(lobby_db.String(200))
+    module_slug = moduleSlug
+    bot_namespace = opeBotNamespace
+    bot_name = opeBotName
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     num_users = lobby_db.Column(lobby_db.Integer)
     users = lobby_db.relationship('User', back_populates='room')
@@ -66,6 +71,8 @@ class User(lobby_db.Model):
     email = lobby_db.Column(lobby_db.String(80), primary_key=False)
     password = lobby_db.Column(lobby_db.String(30), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
+    module_slug = moduleSlug
+    ope_namespace = moduleSlug
     agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
     socket_id = lobby_db.Column(lobby_db.String(50))
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
@@ -211,6 +218,7 @@ def assign_new_rooms(num_users_per_room):
 
 
 def request_session(room_name):
+    global sessionRequestPrefix, moduleSlug, opeBotNamespace, opeBotNamespace, opeBotUsername
     url = sessionRequestPrefix + moduleSlug + "/" + room_name
     current_time = datetime.now()
     data = {
@@ -241,6 +249,107 @@ def request_session(room_name):
         return None
 
 
+def request_user(user, room):
+    global userRequestPrefix, moduleSlug
+    url = userRequestPrefix + moduleSlug + "/" + room.room_name
+    current_time = datetime.now()
+    data = {
+        'enableMatch': False,
+        'isBot': False,
+        'stressTest': False,
+        'name': user.name,
+        'email': user.email,
+        'password': user.password,
+        'moduleSlug': user.module_slug,
+        'opeSessionRef': [
+            {
+                'namespace': room.module_slug,
+                'name': room.name               # WILL THIS BE A NAME RETURNED BY KUBERNETES?
+            }
+        ]
+    }
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        result = response_data.get('result')
+        print("request_user: POST successful")
+        print("request_user, result: " + str(result))
+        print("request_user: session POST succeeded")
+        return str(result)
+    else:
+        print("request_user: session POST failed -- response code " + str(response.status_code))
+        return None
+
+    request_session(room, user)
+
+
+def email_to_dns(email):
+    # Use regular expressions to extract the domain from the email address
+    match = re.search(r'@([\w.-]+)', email)
+
+    if match:
+        domain = match.group(1)
+        # Convert the domain to lowercase (DNS is case-insensitive)
+        domain = domain.lower()
+        # Split the domain into its parts (subdomains)
+        parts = domain.split('.')
+        # Reverse the order of the parts to follow DNS hierarchy
+        parts.reverse()
+        # Join the parts with dots to create the DNS format
+        dns_format = '.'.join(parts)
+        print("email_to_dns transformation: " + dns_format)
+        return dns_format
+    else:
+        print("email_to_dns transformation failed")
+        return None
+
+# Example usage:
+email = "user@example.com"
+dns_standard = email_to_dns(email)
+print("Email:", email)
+print("DNS Standard:", dns_standard)
+
+
+
+def request_session(room_name, user):
+    global sessionRequestPrefix, moduleSlug, opeBotNamespace, opeBotNamespace, opeBotUsername
+    url = sessionRequestPrefix + moduleSlug + "/" + room_name
+    current_time = datetime.now()
+    if user == None:
+        user_name = opeBotUsername
+    else:
+        user_name = email_to_dns(user.name)
+    data = {
+        'startTime': current_time.strftime("%Y-%m-%dT%H:%M:%S-%z:%Z"),
+        'moduleSlug': moduleSlug,
+        'opeBotRef': {
+            'namespace': opeBotNamespace,
+            'name': opeBotName
+        },
+        'opeUsersRef': [
+            {
+                'namespace': moduleSlug,
+                'name': user_name
+            }
+        ]
+    }
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        result = response_data.get('result')
+        print("request_session: POST successful")
+        print("request_session, result: " + str(result))
+        return str(result)
+    else:
+        print("request_session: POST failed -- response code " + str(response.status_code))
+        return None
+
+
+
 def assign_new_room(num_users):
     global nextRoomNum, session
 
@@ -251,7 +360,7 @@ def assign_new_room(num_users):
     url = urlPrefix
 
     # ??? WILL I GET A ROOM NAME QUICKLY ENOUGH FROM REQUESTING A SESSION ???
-    future_room_name = request_session(room_name)
+    future_room_name = request_session(room_name, None)
 
     with app.app_context():
         room = Room(room_name=room_name, url=url, num_users=0)
@@ -269,6 +378,7 @@ def assign_room(user, room):
         waiting_room = Room.query.filter_by(room_name="waiting_room").first()
         waiting_room.num_users -= 1
         session.add(waiting_room)
+    request_user(user, room)
     session.add(room)
     session.commit()
     if room.room_name != "waiting_room":
