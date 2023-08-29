@@ -147,14 +147,15 @@ def reassign_room(user, room):
 
 def assign_rooms():
     global unassigned_users
-    if len(unassigned_users) > 0:
+    num_unassigned_users = len(unassigned_users)
+    if num_unassigned_users > 0:
 
         # Fill rooms that have less than the target number of users
         if fillRoomsUnderTarget:
             assign_rooms_under_n_users(targetUsersPerRoom)
 
         # Fill rooms with the target number of users
-        if len(unassigned_users) >= targetUsersPerRoom:
+        if num_unassigned_users >= targetUsersPerRoom:
             assign_new_rooms(targetUsersPerRoom)
 
         # Check for any users waiting long enough that they should get a suboptimal assignment
@@ -162,14 +163,14 @@ def assign_rooms():
         num_users_due_for_suboptimal = len(users_due_for_suboptimal)
 
         # Overfill rooms if there are not enough unassigned users to create a new room
-        if (len(unassigned_users) > 0) and overFillRooms:
+        if (num_unassigned_users > 0) and overFillRooms:
             if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) < minUsersPerRoom):
                 assign_rooms_under_n_users(maxUsersPerRoom)
 
         # Create a new room, even with less than the target number of users, if there are enough unassigned users
-        if len(unassigned_users) > 0:
-            if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) >= minUsersPerRoom):
-                assign_new_room(targetUsersPerRoom)
+        if num_unassigned_users > 0:
+            if (num_users_due_for_suboptimal > 0) and (num_unassigned_users >= minUsersPerRoom):
+                assign_new_room(num_unassigned_users)
 
     unassigned_users = prune_users()       # tell users who have been waiting too long to come back later
 
@@ -325,24 +326,10 @@ def request_room_status(room):
 
 
 def email_to_dns(email):
-    # Use regular expressions to extract the domain from the email address
-    match = re.search(r'@([\w.-]+)', email)
-
-    if match:
-        domain = match.group(1)
-        # Convert the domain to lowercase (DNS is case-insensitive)
-        domain = domain.lower()
-        # Split the domain into its parts (subdomains)
-        parts = domain.split('.')
-        # Reverse the order of the parts to follow DNS hierarchy
-        parts.reverse()
-        # Join the parts with dots to create the DNS format
-        dns_format = '.'.join(parts)
-        print("email_to_dns transformation: " + dns_format)
-        return dns_format
-    else:
-        print("email_to_dns transformation failed")
-        return None
+    email1 = email.replace('@','-at-')
+    email2 = email1.replace('.','-')
+    print("email_to_dns - original: " + email + "  -- dns: " + email2)
+    return email2
 
 
 def assign_new_room(num_users):
@@ -355,7 +342,7 @@ def assign_new_room(num_users):
     is_room_new = True
 
     with app.app_context():
-        room = Room(room_name=room_name, session_url=None)
+        room = Room(room_name=room_name, session_url=None, num_users=0)
         rooms.append(room)
         session.add(room)
         session.commit()
@@ -464,16 +451,18 @@ def check_for_new_sessions():
                 session_url = request_room_status(room)
                 if session_url is not None:
                     print("check_for_new_sessions - session_url for room " + room.room_name +
-                          "is " + str(session_url))
+                          " is " + str(session_url))
                 else:
                     print("check_for_new_sessions - session_url for room " + room.room_name +
-                          "is None")
+                          " is None")
 
                 # TEMPORARILY FAKING SESSION_URL RESPONSE
                 session_url = fake_session_url
 
                 if session_url is not None:
                     room.session_url = session_url
+                    session.add(room)
+                    session.commit()
                     tell_users_session_url(room)
 
 
