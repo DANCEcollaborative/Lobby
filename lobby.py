@@ -49,6 +49,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] =\
         'postgresql://postgres:testpwd@lobby_db:5432/lobby_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_EXPIRE_ON_COMMIT'] = False
 lobby_db = SQLAlchemy(app)
 session = None
 
