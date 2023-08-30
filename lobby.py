@@ -35,6 +35,7 @@ fake_session_url = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
 sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
+sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
 nextRoomNum = 0
 moduleSlug = 'default'
@@ -76,13 +77,14 @@ class User(lobby_db.Model):
     email = lobby_db.Column(lobby_db.String(80), primary_key=False)
     password = lobby_db.Column(lobby_db.String(30), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
-    module_slug = moduleSlug
-    ope_namespace = moduleSlug
+    module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
+    ope_namespace = lobby_db.Column(lobby_db.String(50), primary_key=False)
     agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
     socket_id = lobby_db.Column(lobby_db.String(50))
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     room_name = lobby_db.Column(lobby_db.String(50))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
+    session_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
     room = lobby_db.relationship('Room', back_populates='users')
 
     def __repr__(self):
@@ -299,25 +301,17 @@ def request_user(user, room):
 def request_room_status(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug
     with app.app_context():
-        request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + moduleSlug + "/" + room.room_name
+        request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + moduleSlug + "/" + room.room_name
     with app.app_context():
-        data = {
-            "spec": {
-                # 'startTime': current_time.strftime("%Y-%m-%dT%H:%M:%S-%z:%Z"),
-                # 'moduleSlug': moduleSlug,
-                # 'opeBotRef': {
-                #     'namespace': opeBotNamespace,
-                #     'name': opeBotName
-                # },
-                # 'opeUsersRef': user_list
-            }
-        }
-        headers = {'Content-Type': 'application/json'}
-        response = requests.get(request_url, data=json.dumps(data), headers=headers)
+        # data = {
+        # }
+        # headers = {'Content-Type': 'application/json'}
+        # response = requests.get(request_url, data=json.dumps(data), headers=headers)
+        response = requests.get(request_url)
 
         if response.status_code == 200:
             response_data = response.json()
-            session_url = response_data.get('jupyterlabURL')
+            session_url = response_data.get('session')
             print("request_room_status succeeded - URL: " + session_url)
             return session_url
         else:
@@ -326,9 +320,9 @@ def request_room_status(room):
 
 
 def email_to_dns(email):
-    email1 = email.replace('@','-at-')
-    email2 = email1.replace('.','-')
-    print("email_to_dns - original: " + email + "  -- dns: " + email2)
+    email1 = email.replace('@', '-at-')
+    email2 = email1.replace('.', '-')
+    # print("email_to_dns - original: " + email + "  -- dns: " + email2)
     return email2
 
 
@@ -360,6 +354,7 @@ def assign_room(user, room, is_room_new):
         session.add(waiting_room)
     if not is_room_new:
         request_user(user, room)
+        tell_users_session_url(room)
     session.add(room)
     session.commit()
     # if room.room_name != "waiting_room":
@@ -439,9 +434,12 @@ def print_users():
 def tell_users_session_url(room):
     users = room.users
     for user in users:
-        user_message = str(user.user_id) + ", here's your room link: " + str(room.session_url)
-        print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
-        socketio.emit('update_event', {'message': user_message, 'url': room.session_url}, room=user.socket_id)
+        if not user.session_url_notified:
+            user_message = str(user.user_id) + ", here's your room link: " + str(room.session_url)
+            print("assign_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
+            socketio.emit('update_event', {'message': user_message, 'url': room.session_url}, room=user.socket_id)
+            user.session_url_notified = True
+            session.add(user)
 
 
 def check_for_new_sessions():
@@ -457,17 +455,19 @@ def check_for_new_sessions():
                           " is None")
 
                 # TEMPORARILY FAKING SESSION_URL RESPONSE
-                session_url = fake_session_url
+                if session_url is None:
+                    print("check_for_new_sessions - *** creating fake session URL ***")
+                    session_url = fake_session_url
 
                 if session_url is not None:
                     room.session_url = session_url
+                    tell_users_session_url(room)
                     session.add(room)
                     session.commit()
-                    tell_users_session_url(room)
 
 
 def assigner():
-    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time
+    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug
     if not lobby_initialized:
         with app.app_context():
             session = lobby_db.session
@@ -533,7 +533,8 @@ def assigner():
                         waiting_room = Room.query.filter_by(room_name="waiting_room").first()
                         user = User(user_id=user_id, name=name, email=email, password=password,
                                     entity_id=entity_id, agent=agent, socket_id=socket_id, room=waiting_room,
-                                    room_name=waiting_room.room_name)
+                                    room_name=waiting_room.room_name, module_slug=moduleSlug,
+                                    ope_namespace=moduleSlug, session_url_notified=False)
                         is_room_new = False
                         assign_room(user, waiting_room, is_room_new)
                         print("assigner - user " + user.user_id + " start_time: " + str(user.start_time) +
