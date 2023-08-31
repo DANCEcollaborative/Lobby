@@ -474,8 +474,25 @@ def tell_users_session_url(room):
 
 def check_for_new_sessions():
     global sessionUpdated, session, rooms
+    print("===== check_for_new_sessions - ENTER =====")
+    # with app.app_context():
+    #     if not session.is_active:
+    #         session = lobby_db.session
+    # print("check_for_new_sessions - len(rooms): " + str(len(rooms)))
+    # i = 0
+    # with app.app_context():
+    #     while i < len(rooms):
+    #         print("check_for_new_sessions - i = " + str(i))
+    #         print("check_for_new_sessions - room_name: " + rooms[i].room_name)
+    #         i += 1
+    # for room in rooms:
+    #     print("check_for_new_sessions - room_name: " + room.room_name)
     with app.app_context():
-        for room in rooms:
+        rooms = Room.query.all()
+        i = 0
+        # for room in rooms:
+        while i < len(rooms):
+            room = rooms[i]
             if room.session_url is None:
                 session_url = request_room_status(room)
                 if session_url is not None:
@@ -498,6 +515,7 @@ def check_for_new_sessions():
                     # sessionUpdated = True
                     session.commit()
                     session = lobby_db.session
+            i += 1
 
 
 def assigner():
@@ -601,6 +619,10 @@ def assigner():
             assign_rooms()
             # print("\n\n")
             print_room_assignments()
+
+        # with app.app_context():
+        #     session.commit()
+        #     session = lobby_db.session
 
         check_for_new_sessions()
 
