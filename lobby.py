@@ -28,7 +28,6 @@ fillRoomsUnderTarget = True
 overFillRooms = True
 lobby_initialized = False
 unassigned_users = []
-rooms = []
 assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 
 # fake_session_url = "https://bazaar.lti.cs.cmu.edu/"
@@ -177,7 +176,7 @@ def assign_rooms():
             if (num_users_due_for_suboptimal > 0) and (num_unassigned_users >= minUsersPerRoom):
                 assign_new_room(num_unassigned_users)
 
-    unassigned_users = prune_users()       # tell users who have been waiting too long to come back later
+        prune_users()       # tell users who have been waiting too long to come back later
 
 
 def assign_rooms_under_n_users(n_users):
@@ -343,7 +342,6 @@ def assign_new_room(num_users):
 
     with app.app_context():
         room = Room(room_name=room_name, session_url=None, num_users=0)
-        rooms.append(room)
         session.add(room)
         session.commit()
         session = lobby_db.session
@@ -474,26 +472,10 @@ def tell_users_session_url(room):
 
 def check_for_new_sessions():
     global sessionUpdated, session, rooms
-    print("===== check_for_new_sessions - ENTER =====")
-    # with app.app_context():
-    #     if not session.is_active:
-    #         session = lobby_db.session
-    # print("check_for_new_sessions - len(rooms): " + str(len(rooms)))
-    # i = 0
-    # with app.app_context():
-    #     while i < len(rooms):
-    #         print("check_for_new_sessions - i = " + str(i))
-    #         print("check_for_new_sessions - room_name: " + rooms[i].room_name)
-    #         i += 1
-    # for room in rooms:
-    #     print("check_for_new_sessions - room_name: " + room.room_name)
     with app.app_context():
         rooms = Room.query.all()
-        i = 0
-        # for room in rooms:
-        while i < len(rooms):
-            room = rooms[i]
-            if room.session_url is None:
+        for room in rooms:
+            if (room.room_name != "waiting_room") and (room.session_url is None):
                 session_url = request_room_status(room)
                 if session_url is not None:
                     print("check_for_new_sessions - session_url for room " + room.room_name +
@@ -511,11 +493,8 @@ def check_for_new_sessions():
                     room.session_url = session_url
                     tell_users_session_url(room)
                     session.add(room)
-                    # session.commit()
-                    # sessionUpdated = True
                     session.commit()
                     session = lobby_db.session
-            i += 1
 
 
 def assigner():
@@ -620,18 +599,8 @@ def assigner():
             # print("\n\n")
             print_room_assignments()
 
-        # with app.app_context():
-        #     session.commit()
-        #     session = lobby_db.session
-
         check_for_new_sessions()
 
-        # if sessionUpdated:
-        #     print("assigner - sessionUpdated == true")
-        #     with app.app_context():
-        #         session.commit()
-        #     # sessionUpdated = False
-        print("assigner - about to sleep")
         time.sleep(assigner_sleep_time)
 
 
