@@ -20,7 +20,7 @@ socketio = SocketIO(app)
 user_queue = queue.Queue()
 
 targetUsersPerRoom = 4
-minUsersPerRoom = 2
+minUsersPerRoom = 1
 maxUsersPerRoom = 5
 maxWaitTimeForSubOptimalAssignment = 10        # seconds
 maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
@@ -123,7 +123,8 @@ def login_get(user_id):
 def getJupyterlabUrl():
     # global InfoType
     print("getJupyterlabUrl: enter", flush=True)
-    data = request.get_json()
+    # data = request.get_json()
+    data = request.data.decode('utf-8')
     info_type = InfoType.idInfo
     user_id = data.get('userId')
     name = data.get('name')
