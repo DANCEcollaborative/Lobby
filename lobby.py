@@ -6,7 +6,7 @@ import queue
 import json
 import requests
 # import re
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -32,6 +32,7 @@ assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 
 # fake_session_url = "https://bazaar.lti.cs.cmu.edu/"
 fake_session_url = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
+lobby_url_prefix = 'https://bazaar.lti.cs.cmu.edu/sail-lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
 sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
@@ -112,6 +113,40 @@ def login_get(user_id):
     print("Login: received user_id " + str(user_id), flush=True)
     return render_template('lobby.html', user_id=user_id)
 
+@app.route('/sail_lobby/<user_id>', methods=['GET', 'POST'])
+def sail_lobby(user_id):
+    print("sail_lobby: received user_id " + str(user_id), flush=True)
+    return render_template('lobby.html', user_id=user_id)
+
+@app.route('/getJupyterlabUrl', methods=['POST'])
+def getJupyterlabUrl():
+    print("getJupyterlabUrl: enter", flush=True)
+    data = request.get_json()
+    user_id = data.get('userId')
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+    entity_id = data.get('entityId')
+    print(f"getJupyterlabUrl -- user_id: {user_id} -- name: {name} -- email: {email}", flush=True)
+    user_info = {'user_id': str(user_id), 'socket_id': str(socket_id), 'name': str(name), 'email': str(email),
+                 'password': str(password), 'entity_id': str(entity_id), 'agent': str(agent)}
+    user_queue.put(user_info)
+    url = lobby_url_prefix + user_id
+    response_data = {
+        "url": url
+    }
+    return jsonify(response_data), 200
+    # return render_template('lobby.html', user_id=user_id)
+
+@socketio.on('sail_lobby_connect')
+def sail_lobby_connect(user_data):
+    socket_id = request.sid
+    user_id = user_data.get('userId')
+    print(f"sail_lobby_connect -- socket_id: {socket_id} -- user_id:  {user_id}", flush=True)
+    user_info = {'user_id': str(user_id), 'socket_id': str(socket_id)}
+    user_queue.put(user_info)
+    print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
+    emit('response_event', "Data received successfully")
 
 @socketio.on('user_connect')
 def process_user_connect(user_data):
