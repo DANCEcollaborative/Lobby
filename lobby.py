@@ -124,7 +124,8 @@ def getJupyterlabUrl():
     # global InfoType
     print("getJupyterlabUrl: enter", flush=True)
     # data = request.get_json()
-    data = request.data.decode('utf-8')
+    # data = request.data.decode('utf-8')
+    data = json.loads(request.data.decode('utf-8'))
     info_type = InfoType.idInfo
     user_id = data.get('userId')
     name = data.get('name')
