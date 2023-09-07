@@ -33,7 +33,7 @@ assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 
 # fake_activity_url = "https://bazaar.lti.cs.cmu.edu/"
 fake_activity_url = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
-lobby_url_prefix = 'https://bazaar.lti.cs.cmu.edu:5000/sail-lobby/'
+lobby_url_prefix = 'https://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
 sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
@@ -121,6 +121,7 @@ def login_get(user_id):
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
+    global user_queue
     # global InfoType
     print("getJupyterlabUrl: enter", flush=True)
     # data = request.get_json()
@@ -155,6 +156,7 @@ def sail_lobby(user_id):
 @socketio.on('sail_lobby_connect')
 def sail_lobby_connect(user_data):
     # global InfoType
+    global user_queue
     socket_id = request.sid
     info_type = InfoType.socketInfo
     user_id = user_data.get('userId')
@@ -594,7 +596,7 @@ def is_duplicate_user(user_info, user):
 
 
 def assigner():
-    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug
+    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug, user_queue
 
     # Initialize Lobby
     if not lobby_initialized:
