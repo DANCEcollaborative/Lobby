@@ -127,11 +127,11 @@ def getJupyterlabUrl():
     # data = request.data.decode('utf-8')
     data = json.loads(request.data.decode('utf-8'))
     info_type = InfoType.idInfo
-    user_id = data.get('userId')
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
     entity_id = data.get('entityId')
+    user_id = email_to_dns(email)
     print(f"getJupyterlabUrl -- info_type: {info_type} -- user_id: {user_id} -- name: {name} -- email: {email}",
           flush=True)
     user_info = {'info_type': info_type, 'user_id': str(user_id), 'name': str(name), 'email': str(email),
