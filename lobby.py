@@ -39,7 +39,7 @@ sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 105
+nextRoomNum = 106
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
@@ -285,20 +285,10 @@ def assign_new_rooms(num_users_per_room):
         assign_new_room(num_users_per_room)
 
 
-
-def format_current_time():
-    current_time = datetime.now().replace(microsecond=0)
-    utc_offset = current_time.utcoffset()
-    offset = timedelta(hours=utc_offset.seconds // 3600, minutes=(utc_offset.seconds // 60) % 60)
-    iso8601_time = current_time - offset
-    return iso8601_time.strftime("%Y-%m-%dT%H:%M:%S%z")
-
-
 def request_session(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
     request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + namespace + "/" + room.room_name
     print("request_session -- request_url: " + request_url, flush=True)
-    # current_time = datetime.now()
     with app.app_context():
         user_list = []
         i = 0
@@ -309,10 +299,6 @@ def request_session(room):
             i += 1
         data = {
             "spec": {
-                # 'startTime': current_time.strftime("%Y-%m-%dT%H:%M:%S-%z:%Z"),
-                # 'startTime': datetime.now().astimezone().replace(microsecond=0).isoformat(),
-                # 'startTime': format_current_time(),
-                # 'startTime':  localTimezone.localize(datetime.now().replace(microsecond=0)).isoformat(),
                 "startTime": datetime.now(localTimezone).replace(microsecond=0).isoformat(),
                 "moduleSlug": moduleSlug,
                 "opeBotRef": {
@@ -328,10 +314,7 @@ def request_session(room):
 
     # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
-        # response_data = response.json()
-        # result = response_data.get('result')
         print("request_session: POST successful", flush=True)
-        # print("request_session, result: " + str(result))
         # return str(result)
     else:
         print("request_session: POST failed -- response code " + str(response.status_code))
@@ -383,12 +366,9 @@ def request_room_status(room):
         # headers = {'Content-Type': 'application/json'}
         # response = requests.get(request_url, data=json.dumps(data), headers=headers)
     response = requests.get(request_url)
-
+s
     if response.status_code == 200:
-        response_data = response.data
-        # activity_url = response_data.get('session')
-        # print("request_room_status succeeded - URL: " + activity_url)
-        # return activity_url
+        response_data = response.text
         return response_data
     else:
         print("request_room_status failed -- response code " + str(response.status_code))
