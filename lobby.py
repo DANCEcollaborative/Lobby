@@ -1,6 +1,7 @@
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
+import pytz
 import threading
 import queue
 import json
@@ -42,6 +43,7 @@ nextRoomNum = 0
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
+localTimezone = pytz.timezone('America/New_York')
 
 # opeBotUsername = 'user-at-andrew-cmu-edu'  # UPDATE THIS ???
 opeBotUsername = 'bazaar-lti-cs-cmu-edu'  # UPDATE THIS ???
@@ -286,7 +288,7 @@ def assign_new_rooms(num_users_per_room):
 
 
 def format_current_time():
-    current_time = datetime.now()
+    current_time = datetime.now().replace(microsecond=0)
     utc_offset = current_time.utcoffset()
     offset = timedelta(hours=utc_offset.seconds // 3600, minutes=(utc_offset.seconds // 60) % 60)
     iso8601_time = current_time - offset
@@ -294,7 +296,7 @@ def format_current_time():
 
 
 def request_session(room):
-    global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername
+    global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
     request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + namespace + "/" + room.room_name
     print("request_session -- request_url: " + request_url, flush=True)
     # current_time = datetime.now()
@@ -309,7 +311,8 @@ def request_session(room):
         data = {
             "spec": {
                 # 'startTime': datetime.now().astimezone().replace(microsecond=0).isoformat(),
-                'startTime': format_current_time(),
+                # 'startTime': format_current_time(),
+                'startTime':  localTimezone.localize(datetime.now().replace(microsecond=0)).isoformat(),
                 'moduleSlug': moduleSlug,
                 'opeBotRef': {
                     'namespace': namespace,
