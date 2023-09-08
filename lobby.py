@@ -310,9 +310,11 @@ def request_session(room):
             i += 1
         data = {
             "spec": {
+                # 'startTime': current_time.strftime("%Y-%m-%dT%H:%M:%S-%z:%Z"),
                 # 'startTime': datetime.now().astimezone().replace(microsecond=0).isoformat(),
                 # 'startTime': format_current_time(),
-                'startTime':  localTimezone.localize(datetime.now().replace(microsecond=0)).isoformat(),
+                # 'startTime':  localTimezone.localize(datetime.now().replace(microsecond=0)).isoformat(),
+                'startTime': datetime.now(localTimezone).replace(microsecond=0).isoformat(),
                 'moduleSlug': moduleSlug,
                 'opeBotRef': {
                     'namespace': namespace,
