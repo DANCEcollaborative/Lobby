@@ -83,7 +83,7 @@ class User(lobby_db.Model):
     user_id = lobby_db.Column(lobby_db.String(30), nullable=False)
     name = lobby_db.Column(lobby_db.String(50), primary_key=False)
     email = lobby_db.Column(lobby_db.String(80), primary_key=False)
-    password = lobby_db.Column(lobby_db.String(30), primary_key=False)
+    password = lobby_db.Column(lobby_db.String(100), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
     ope_namespace = lobby_db.Column(lobby_db.String(50), primary_key=False)
