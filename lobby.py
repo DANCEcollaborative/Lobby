@@ -40,8 +40,8 @@ userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
 nextRoomNum = 0
-moduleSlug = 'default'
-opeBotNamespace = 'default'
+moduleSlug = 'ope-learn-practice-p032vbfd'
+namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
 
 # opeBotUsername = 'user-at-andrew-cmu-edu'  # UPDATE THIS ???
@@ -67,7 +67,7 @@ class Room(lobby_db.Model):
     room_name = lobby_db.Column(lobby_db.String(50))
     activity_url = lobby_db.Column(lobby_db.String(200))
     module_slug = moduleSlug
-    bot_namespace = opeBotNamespace
+    bot_namespace = namespace
     bot_name = opeBotName
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     num_users = lobby_db.Column(lobby_db.Integer)
@@ -86,7 +86,7 @@ class User(lobby_db.Model):
     password = lobby_db.Column(lobby_db.String(100), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
-    ope_namespace = lobby_db.Column(lobby_db.String(50), primary_key=False)
+    ope_namespace = namespace
     agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
     socket_id = lobby_db.Column(lobby_db.String(50))
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
@@ -286,7 +286,7 @@ def assign_new_rooms(num_users_per_room):
 
 
 def request_session(room):
-    global generalRequestPrefix, sessionRequestPath, moduleSlug, opeBotNamespace, opeBotNamespace, opeBotUsername
+    global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername
     request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + moduleSlug + "/" + room.room_name
     print("request_session -- request_url: " + request_url, flush=True)
     current_time = datetime.now()
@@ -303,7 +303,7 @@ def request_session(room):
                 'startTime': current_time.strftime("%Y-%m-%dT%H:%M:%S-%z:%Z"),
                 'moduleSlug': moduleSlug,
                 'opeBotRef': {
-                    'namespace': opeBotNamespace,
+                    'namespace': namespace,
                     'name': opeBotName
                 },
                 'opeUsersRef': user_list
@@ -620,7 +620,7 @@ def is_duplicate_user(user_info, user):
 
 
 def assigner():
-    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug, user_queue
+    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug, user_queue, namespace
 
     # Initialize Lobby
     if not lobby_initialized:
@@ -670,7 +670,7 @@ def assigner():
                             if user in unassigned_users:
                                 unassigned_users.remove(user)
                             user = User(user_id=user_id, name=name, email=email, password=password,
-                                        entity_id=entity_id, ope_namespace=entity_id, module_slug=entity_id,
+                                        entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
                                         activity_url_notified=False)
                             session.add(user)
                             session.commit()
@@ -687,7 +687,7 @@ def assigner():
                     if user is None:
                         print("assigner: user " + str(user_id) + " is a new user")
                         user = User(user_id=user_id, name=name, email=email, password=password,
-                                    entity_id=entity_id, ope_namespace=entity_id, module_slug=entity_id,
+                                    entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
                                     activity_url_notified=False)
                         session.add(user)
                         session.commit()
