@@ -288,6 +288,7 @@ def assign_new_rooms(num_users_per_room):
 def request_session(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug, opeBotNamespace, opeBotNamespace, opeBotUsername
     request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + moduleSlug + "/" + room.room_name
+    print("request_session -- request_url: " + request_url, flush=True)
     current_time = datetime.now()
     with app.app_context():
         user_list = []
@@ -308,6 +309,7 @@ def request_session(room):
                 'opeUsersRef': user_list
             }
         }
+    print("request_session -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
@@ -361,6 +363,7 @@ def request_room_status(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug
     with app.app_context():
         request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + moduleSlug + "/" + room.room_name
+        print("request_room_status -- request_url: " + request_url, flush=True)
         # with app.app_context():
         # data = {
         # }
@@ -411,8 +414,8 @@ def assign_room(user, room, is_room_new):
     room.users.append(user)
     room.num_users += 1
     if room.room_name != "waiting_room":
-        waiting_room = Room.query.filter_by(room_name="waiting_room").first()
-        waiting_room.num_users -= 1
+        # waiting_room = Room.query.filter_by(room_name="waiting_room").first()
+        # waiting_room.num_users -= 1
         session.add(waiting_room)
     if not is_room_new:
         request_user(user, room)
@@ -466,11 +469,25 @@ def prune_users():
                 socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
                 unassigned_users.remove(user)
                 User.query.filter(User.id == user.id).delete()
-                waiting_room = Room.query.filter_by(room_name="waiting_room").first()
-                waiting_room.num_users -= 1
                 session.commit()
                 session = lobby_db.session
     return unassigned_users
+
+
+def prune_room(room):
+    global session
+    with app.app_context():
+        for user in room.users:
+            user_message = str(user.name) + \
+                ", I'm sorry. There is no session available right now. Please try again later."
+            print("prune_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
+            socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
+            User.query.filter(User.id == user.id).delete()
+            session.commit()
+            session = lobby_db.session
+        Room.query.filter(Room.id == room.id).delete()
+        session.commit()
+        session = lobby_db.session
 
 
 def print_room_assignments():
@@ -508,7 +525,7 @@ def tell_users_activity_url(room):
         users = room.users
         for user in users:
             if not user.activity_url_notified:
-                user_message = str(user.user_id) + ", here's your room link: " + str(room.activity_url)
+                user_message = str(user.name) + ", here's your room link: " + str(room.activity_url)
                 print("tell_users_activity_url: socket_id: " + user.socket_id + "    message: " + user_message,
                       flush=True)
                 socketio.emit('update_event', {'message': user_message, 'url': room.activity_url}, room=user.socket_id)
@@ -523,19 +540,22 @@ def check_for_new_activity_urls():
     with app.app_context():
         rooms = Room.query.all()
         for room in rooms:
-            if (room.room_name != "waiting_room") and (room.activity_url is None):
-                activity_url = request_room_status(room)
-                if activity_url is not None:
-                    print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                          " is " + str(activity_url))
-                else:
-                    print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                          " is None")
+            if room.room_name != "waiting_room":
+                if (time.time() - room.start_time.timestamp()) >= maxWaitTimeUntilGiveUp:
+                    prune_room(room)
+                elif (room.activity_url is None):
+                    activity_url = request_room_status(room)
+                    if activity_url is not None:
+                        print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+                              " is " + str(activity_url))
+                    else:
+                        print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+                              " is None")
 
                 # TEMPORARILY FAKING activity_url RESPONSE
-                if activity_url is None:
-                    print("check_for_new_activity_urls - *** creating fake session URL ***")
-                    activity_url = fake_activity_url
+                # if activity_url is None:
+                #     print("check_for_new_activity_urls - *** creating fake session URL ***")
+                #     activity_url = fake_activity_url
 
                 if activity_url is not None:
                     room.activity_url = activity_url
