@@ -413,10 +413,10 @@ def assign_room(user, room, is_room_new):
     user.room_name = room.room_name
     room.users.append(user)
     room.num_users += 1
-    if room.room_name != "waiting_room":
-        # waiting_room = Room.query.filter_by(room_name="waiting_room").first()
-        # waiting_room.num_users -= 1
-        session.add(waiting_room)
+    # if room.room_name != "waiting_room":
+    #     waiting_room = Room.query.filter_by(room_name="waiting_room").first()
+    #     waiting_room.num_users -= 1
+    #     session.add(waiting_room)
     if not is_room_new:
         request_user(user, room)
         tell_users_activity_url(room)
