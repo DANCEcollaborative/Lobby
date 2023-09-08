@@ -39,7 +39,7 @@ sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 0
+nextRoomNum = 100
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
@@ -314,13 +314,13 @@ def request_session(room):
                 # 'startTime': datetime.now().astimezone().replace(microsecond=0).isoformat(),
                 # 'startTime': format_current_time(),
                 # 'startTime':  localTimezone.localize(datetime.now().replace(microsecond=0)).isoformat(),
-                'startTime': datetime.now(localTimezone).replace(microsecond=0).isoformat(),
-                'moduleSlug': moduleSlug,
-                'opeBotRef': {
-                    'namespace': namespace,
-                    'name': opeBotName
+                "startTime": datetime.now(localTimezone).replace(microsecond=0).isoformat(),
+                "moduleSlug": moduleSlug,
+                "opeBotRef": {
+                    "namespace": namespace,
+                    "name": opeBotName
                 },
-                'opeUsersRef': user_list
+                "opeUsersRef": user_list
             }
         }
     print("request_session -- data as string: " + str(data), flush=True)
