@@ -540,10 +540,14 @@ def check_for_new_activity_urls():
     with app.app_context():
         rooms = Room.query.all()
         for room in rooms:
-            if room.room_name != "waiting_room":
-                if (time.time() - room.start_time.timestamp()) >= maxWaitTimeUntilGiveUp:
+            activity_url = None
+            if room.room_name != "waiting_room" and room.activity_url is None:
+                wait_time = time.time() - room.start_time.timestamp()
+                print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
+                      flush=True)
+                if wait_time >= maxWaitTimeUntilGiveUp:
                     prune_room(room)
-                elif (room.activity_url is None):
+                else:
                     activity_url = request_room_status(room)
                     if activity_url is not None:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
