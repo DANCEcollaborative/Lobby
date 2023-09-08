@@ -39,7 +39,7 @@ sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 102
+nextRoomNum = 104
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
@@ -375,7 +375,7 @@ def request_user(user, room):
 def request_room_status(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug
     with app.app_context():
-        request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + moduleSlug + "/" + room.room_name
+        request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + room.room_name
         print("request_room_status -- request_url: " + request_url, flush=True)
         # with app.app_context():
         # data = {
