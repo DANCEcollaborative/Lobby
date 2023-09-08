@@ -1,6 +1,6 @@
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import queue
 import json
@@ -284,11 +284,20 @@ def assign_new_rooms(num_users_per_room):
         assign_new_room(num_users_per_room)
 
 
+
+def format_current_time():
+    current_time = datetime.now()
+    utc_offset = current_time.utcoffset()
+    offset = timedelta(hours=utc_offset.seconds // 3600, minutes=(utc_offset.seconds // 60) % 60)
+    iso8601_time = current_time - offset
+    return iso8601_time.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+
 def request_session(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername
     request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + namespace + "/" + room.room_name
     print("request_session -- request_url: " + request_url, flush=True)
-    current_time = datetime.now()
+    # current_time = datetime.now()
     with app.app_context():
         user_list = []
         i = 0
@@ -299,7 +308,8 @@ def request_session(room):
             i += 1
         data = {
             "spec": {
-                'startTime': datetime.now().astimezone().replace(microsecond=0).isoformat(),
+                # 'startTime': datetime.now().astimezone().replace(microsecond=0).isoformat(),
+                'startTime': format_current_time(),
                 'moduleSlug': moduleSlug,
                 'opeBotRef': {
                     'namespace': namespace,
