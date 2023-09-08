@@ -366,7 +366,7 @@ def request_room_status(room):
         # headers = {'Content-Type': 'application/json'}
         # response = requests.get(request_url, data=json.dumps(data), headers=headers)
     response = requests.get(request_url)
-s
+
     if response.status_code == 200:
         response_data = response.text
         return response_data
