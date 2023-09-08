@@ -31,9 +31,8 @@ lobby_initialized = False
 unassigned_users = []
 assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 
-# fake_activity_url = "https://bazaar.lti.cs.cmu.edu/"
-fake_activity_url = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
-lobby_url_prefix = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
+# fake_activity_url = '<a href="https://bree.lti.cs.cmu.edu">Go to Room</a>'
+lobby_url_prefix = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
 sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
