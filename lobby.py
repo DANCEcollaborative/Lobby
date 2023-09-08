@@ -39,7 +39,7 @@ sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 101
+nextRoomNum = 102
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
@@ -330,8 +330,8 @@ def request_session(room):
     if response.status_code == 200:
         # response_data = response.json()
         # result = response_data.get('result')
-        print("request_session: POST successful")
-        print("request_session, result: " + str(result))
+        print("request_session: POST successful", flush=True)
+        # print("request_session, result: " + str(result))
         # return str(result)
     else:
         print("request_session: POST failed -- response code " + str(response.status_code))
