@@ -39,13 +39,12 @@ sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 100
+nextRoomNum = 101
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
 localTimezone = pytz.timezone('America/New_York')
 
-# opeBotUsername = 'user-at-andrew-cmu-edu'  # UPDATE THIS ???
 opeBotUsername = 'bazaar-lti-cs-cmu-edu'  # UPDATE THIS ???
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -329,8 +328,8 @@ def request_session(room):
 
     # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
-        response_data = response.json()
-        result = response_data.get('result')
+        # response_data = response.json()
+        # result = response_data.get('result')
         print("request_session: POST successful")
         print("request_session, result: " + str(result))
         # return str(result)
