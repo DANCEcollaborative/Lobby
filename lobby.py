@@ -646,7 +646,7 @@ def assigner():
                             if user in unassigned_users:
                                 unassigned_users.remove(user)
                             user = User(user_id=user_id, name=name, email=email, password=password,
-                                        entity_id=entity_id, ope_namespace=entity_id, moduleSlug=entity_id,
+                                        entity_id=entity_id, ope_namespace=entity_id, module_slug=entity_id,
                                         activity_url_notified=False)
                             session.add(user)
                             session.commit()
@@ -663,7 +663,7 @@ def assigner():
                     if user is None:
                         print("assigner: user " + str(user_id) + " is a new user")
                         user = User(user_id=user_id, name=name, email=email, password=password,
-                                    entity_id=entity_id, ope_namespace=entity_id, moduleSlug=entity_id,
+                                    entity_id=entity_id, ope_namespace=entity_id, module_slug=entity_id,
                                     activity_url_notified=False)
                         session.add(user)
                         session.commit()
