@@ -286,7 +286,7 @@ def assign_new_rooms(num_users_per_room):
 
 def request_session(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername
-    request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + moduleSlug + "/" + room.room_name
+    request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + namespace + "/" + room.room_name
     print("request_session -- request_url: " + request_url, flush=True)
     current_time = datetime.now()
     with app.app_context():
@@ -294,7 +294,7 @@ def request_session(room):
         i = 0
         while i < room.num_users:
             user = room.users[i]
-            user_element = {'namespace': moduleSlug, 'name': email_to_dns(user.email)}
+            user_element = {'namespace': namespace, 'name': email_to_dns(user.email)}
             user_list.append(user_element)
             i += 1
         data = {
