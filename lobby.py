@@ -33,7 +33,7 @@ assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 
 # fake_activity_url = "https://bazaar.lti.cs.cmu.edu/"
 fake_activity_url = '<a href="https://bazaar.lti.cs.cmu.edu">Go to Room</a>'
-lobby_url_prefix = 'https://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
+lobby_url_prefix = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
 sessionRequestPath = 'opesessions'
 userRequestPath = 'opeusers'
@@ -553,24 +553,24 @@ def process_socket_id(user_id, socket_id):
 
         # There is no user for this user_id
         if user is None:
-            print("process_socket_id: user_id not found in DB: " + user_id)
+            print("process_socket_id: user_id not found in DB: " + user_id, flush=True)
             tell_user_to_retry(user_id, socket_id)
 
         # User either has first socket_id or a new socket_id
         else:
-            print("process_socket_id: assigning socket_id to user " + user_id)
+            print("process_socket_id: assigning socket_id to user " + user_id, flush=True)
             user.socket_id = socket_id
             room_id = user.room_id
-            room = Room.query.get(room_id)
-
-            # If user already has a session URL, tell user the link
-            if room.activity_url is not None:
-                user_message = str(user.user_id) + ", here's your room link: " + str(room.activity_url)
-                print("process_socket_id: socket_id: " + user.socket_id + "    message: " + user_message,
-                      flush=True)
-                socketio.emit('update_event', {'message': user_message, 'url': room.activity_url},
-                              room=user.socket_id)
-                user.activity_url_notified = True
+            if room_id is not None:
+                room = Room.query.get(room_id)
+                # If user already has a session URL, tell user the link
+                if room.activity_url is not None:
+                    user_message = str(user.user_id) + ", here's your room link: " + str(room.activity_url)
+                    print("process_socket_id: socket_id: " + user.socket_id + "    message: " + user_message,
+                          flush=True)
+                    socketio.emit('update_event', {'message': user_message, 'url': room.activity_url},
+                                  room=user.socket_id)
+                    user.activity_url_notified = True
 
             # Update the user info in the DB
             session.add(user)
