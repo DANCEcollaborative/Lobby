@@ -21,7 +21,7 @@ socketio = SocketIO(app)
 user_queue = queue.Queue()
 
 targetUsersPerRoom = 4
-minUsersPerRoom = 1
+minUsersPerRoom = 2
 maxUsersPerRoom = 5
 maxWaitTimeForSubOptimalAssignment = 10        # seconds
 maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
