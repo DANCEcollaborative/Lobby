@@ -35,11 +35,12 @@ assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 # fake_activity_url = '<a href="https://bree.lti.cs.cmu.edu">Go to Room</a>'
 lobby_url_prefix = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
-sessionRequestPath = 'opesessions'
+# sessionRequestPath = 'opesessions'
+sessionRequestPath = 'scheduleSession'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 106
+nextRoomNum = 0
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
 opeBotName = 'bazaar-lti-at-cs-cmu-edu'
