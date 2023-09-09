@@ -401,6 +401,27 @@ def request_user(user, room):
 def request_room_status(room):
     global generalRequestPrefix, sessionRequestPath, moduleSlug
     with app.app_context():
+        request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + moduleSlug + \
+                      "-" + room.room_name
+        print("request_room_status -- request_url: " + request_url, flush=True)
+        # with app.app_context():
+        # data = {
+        # }
+        # headers = {'Content-Type': 'application/json'}
+        # response = requests.get(request_url, data=json.dumps(data), headers=headers)
+    response = requests.get(request_url)
+
+    if response.status_code == 200:
+        response_data = response.text
+        return response_data
+    else:
+        print("request_room_status failed -- response code " + str(response.status_code))
+        return None
+
+
+def request_room_status_without_module_slug(room):
+    global generalRequestPrefix, sessionRequestPath, moduleSlug
+    with app.app_context():
         request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + room.room_name
         print("request_room_status -- request_url: " + request_url, flush=True)
         # with app.app_context():
