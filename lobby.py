@@ -277,7 +277,7 @@ def assign_up_to_n_users(room, num_users, is_room_new):
         unassigned_users.remove(user)
     print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
     if not is_room_new:
-        request_session_scheduleSession(room)
+        request_session_opesessions(room)
 
 
 def assign_new_rooms(num_users_per_room):
@@ -316,6 +316,9 @@ def request_session_opesessions(room):
     # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
         print("request_session_opesessions: POST successful", flush=True)
+        with app.app_context():
+            for user in room.users:
+                request_user(user, room)
         # return str(result)
     else:
         print("request_session_opesessions: POST failed -- response code " + str(response.status_code))
@@ -359,9 +362,10 @@ def request_session_scheduleSession(room):
 
 
 def request_user(user, room):
-    global userRequestPath, moduleSlug
+    global userRequestPath, namespace, moduleSlug
     with app.app_context():
-        request_url = generalRequestPrefix + "/" + userRequestPath + "/" + moduleSlug + "/" + email_to_dns(user.email)
+        request_url = generalRequestPrefix + "/" + userRequestPath + "/" + namespace + "/" + email_to_dns(user.email)
+        print("request_user -- request_url: " + request_url, flush=True)
         data = {
             'enableMatch': False,
             'isBot': False,
@@ -369,26 +373,27 @@ def request_user(user, room):
             'name': user.name,
             'email': user.email,
             'password': user.password,
-            'moduleSlug': user.module_slug,
+            'moduleSlug': moduleSlug,
             'opeSessionRef': [
                 {
-                    'namespace': room.module_slug,
+                    'namespace': namespace,
                     'name': room.room_name
                 }
             ]
         }
+    print("request_user -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
     if response.status_code == 200:
-        response_data = response.json()
-        result = response_data.get('result')
-        print("request_user: POST successful")
-        print("request_user, result: " + str(result))
-        print("request_user: session POST succeeded")
+        # response_data = response.json()
+        # result = response_data.get('result')
+        # print("request_user: POST successful")
+        # print("request_user, result: " + str(result))
+        print("request_user: POST succeeded")
         # return str(result)
     else:
-        print("request_user: session POST failed -- response code " + str(response.status_code))
+        print("request_user: POST failed -- response code " + str(response.status_code))
         # return None
 
 
@@ -434,7 +439,7 @@ def assign_new_room(num_users):
         session.commit()
         session = lobby_db.session
         assign_up_to_n_users(room, num_users, is_room_new)
-        request_session_scheduleSession(room)
+        request_session_opesessions(room)
 
     print("assign_new_room - room.num_users: " + str(room.num_users))
 
