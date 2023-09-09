@@ -36,7 +36,8 @@ assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 lobby_url_prefix = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
 # sessionRequestPath = 'opesessions'
-sessionRequestPath = 'scheduleSession'
+sessionOnlyRequestPath = 'opesessions'
+sessionPlusUsersRequestPath = 'scheduleSession'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
@@ -277,7 +278,7 @@ def assign_up_to_n_users(room, num_users, is_room_new):
         unassigned_users.remove(user)
     print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
     if not is_room_new:
-        request_session_opesessions(room)
+        request_session_then_users(room)
 
 
 def assign_new_rooms(num_users_per_room):
@@ -286,10 +287,10 @@ def assign_new_rooms(num_users_per_room):
         assign_new_room(num_users_per_room)
 
 
-def request_session_opesessions(room):
-    global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
-    request_url = generalRequestPrefix + "/" + sessionRequestPath + "/" + namespace + "/" + room.room_name
-    print("request_session_opesessions -- request_url: " + request_url, flush=True)
+def request_session_then_users(room):
+    global generalRequestPrefix, sessionOnlyRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
+    request_url = generalRequestPrefix + "/" + sessionOnlyRequestPath + "/" + namespace + "/" + room.room_name
+    print("request_session_then_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
         i = 0
@@ -309,26 +310,26 @@ def request_session_opesessions(room):
                 "opeUsersRef": user_list
             }
         }
-    print("request_session_opesessions -- data as string: " + str(data), flush=True)
+    print("request_session_then_users -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
     # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
-        print("request_session_opesessions: POST successful", flush=True)
+        print("request_session_then_users: POST successful", flush=True)
         with app.app_context():
             for user in room.users:
                 request_user(user, room)
         # return str(result)
     else:
-        print("request_session_opesessions: POST failed -- response code " + str(response.status_code))
+        print("request_session_then_users: POST failed -- response code " + str(response.status_code))
         # return None
 
 
-def request_session_scheduleSession(room):
-    global generalRequestPrefix, sessionRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
-    request_url = generalRequestPrefix + "/" + sessionRequestPath
-    print("request_session_scheduleSession -- request_url: " + request_url, flush=True)
+def request_session_plus_users(room):
+    global generalRequestPrefix, sessionPlusUsersRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
+    request_url = generalRequestPrefix + "/" + sessionPlusUsersRequestPath
+    print("request_session_plus_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
         i = 0
@@ -348,16 +349,16 @@ def request_session_scheduleSession(room):
                 }
             ]
         }
-    print("request_session_scheduleSession -- data as string: " + str(data), flush=True)
+    print("request_session_plus_users -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
     # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
-        print("request_session_scheduleSession: POST successful", flush=True)
+        print("request_session_plus_users: POST successful", flush=True)
         # return str(result)
     else:
-        print("request_session_scheduleSession: POST failed -- response code " + str(response.status_code))
+        print("request_session_plus_users: POST failed -- response code " + str(response.status_code))
         # return None
 
 
@@ -439,7 +440,7 @@ def assign_new_room(num_users):
         session.commit()
         session = lobby_db.session
         assign_up_to_n_users(room, num_users, is_room_new)
-        request_session_opesessions(room)
+        request_session_then_users(room)
 
     print("assign_new_room - room.num_users: " + str(room.num_users))
 
