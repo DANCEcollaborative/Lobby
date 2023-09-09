@@ -615,7 +615,8 @@ def is_duplicate_user(user_info, user):
 
 
 def assigner():
-    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug, user_queue, namespace
+    global lobby_db, lobby_initialized, unassigned_users, session, assigner_sleep_time, moduleSlug, \
+        user_queue, namespace
 
     # Initialize Lobby
     if not lobby_initialized:
@@ -697,16 +698,17 @@ def assigner():
             # Add user to waiting room if they have a socket ID but don't already have a room
             with app.app_context():
                 user = User.query.filter_by(user_id=user_id).first()
-                if user.socket_id is not None and user.room_id is None:
-                    print("assigner: adding user " + str(user_id) + " to waiting_room")
-                    waiting_room = Room.query.filter_by(room_name="waiting_room").first()
-                    user.room = waiting_room
-                    user.room_name = waiting_room.room_name
-                    session.add(user)
-                    session.commit()
-                    session = lobby_db.session
-                    print("assigner: adding user " + str(user_id) + " to unassigned_users")
-                    unassigned_users.append(user)
+                if user is not None:
+                    if (user.socket_id is not None) and (user.room_id is None):
+                        print("assigner: adding user " + str(user_id) + " to waiting_room")
+                        waiting_room = Room.query.filter_by(room_name="waiting_room").first()
+                        user.room = waiting_room
+                        user.room_name = waiting_room.room_name
+                        session.add(user)
+                        session.commit()
+                        session = lobby_db.session
+                        print("assigner: adding user " + str(user_id) + " to unassigned_users")
+                        unassigned_users.append(user)
 
         # Get current list of unassigned users
         with app.app_context():
