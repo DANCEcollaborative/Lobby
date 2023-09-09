@@ -278,7 +278,7 @@ def assign_up_to_n_users(room, num_users, is_room_new):
         unassigned_users.remove(user)
     print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
     if not is_room_new:
-        request_session_then_users(room)
+        request_session_plus_users(room)
 
 
 def assign_new_rooms(num_users_per_room):
@@ -440,7 +440,7 @@ def assign_new_room(num_users):
         session.commit()
         session = lobby_db.session
         assign_up_to_n_users(room, num_users, is_room_new)
-        request_session_then_users(room)
+        request_session_plus_users(room)
 
     print("assign_new_room - room.num_users: " + str(room.num_users))
 
