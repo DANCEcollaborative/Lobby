@@ -280,8 +280,6 @@ def assign_up_to_n_users(room, num_users, is_room_new):
         assign_room(user, room, is_room_new)
         unassigned_users.remove(user)
     print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
-    if is_room_new:
-        request_session_plus_users(room)
 
 
 def assign_new_rooms(num_users_per_room):
@@ -415,6 +413,7 @@ def request_room_status(room):
     response = requests.get(request_url)
 
     if response.status_code == 200:
+        print("request_room_status succeeded -- response code " + str(response.status_code))
         response_data = response.text
         return response_data
     else:
@@ -612,7 +611,7 @@ def check_for_new_activity_urls():
                               " is " + str(activity_url))
                     else:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                              " is None")
+
 
                 # TEMPORARILY FAKING activity_url RESPONSE
                 # if activity_url is None:
