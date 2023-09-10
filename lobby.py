@@ -36,6 +36,8 @@ assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 # lobby_url_prefix = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 lobby_url_prefix = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
 generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
+activityUrlLinkPrefix = '<a href="'
+activityUrlLinkSuffix = '">OPE Session</a>'
 # sessionRequestPath = 'opesessions'
 sessionOnlyRequestPath = 'opesessions'
 sessionPlusUsersRequestPath = 'scheduleSession'
@@ -278,7 +280,7 @@ def assign_up_to_n_users(room, num_users, is_room_new):
         assign_room(user, room, is_room_new)
         unassigned_users.remove(user)
     print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
-    if not is_room_new:
+    if is_room_new:
         request_session_plus_users(room)
 
 
@@ -472,10 +474,6 @@ def assign_room(user, room, is_room_new):
     user.room_name = room.room_name
     room.users.append(user)
     room.num_users += 1
-    # if room.room_name != "waiting_room":
-    #     waiting_room = Room.query.filter_by(room_name="waiting_room").first()
-    #     waiting_room.num_users -= 1
-    #     session.add(waiting_room)
     if not is_room_new:
         request_user(user, room)
         tell_users_activity_url(room)
@@ -582,9 +580,10 @@ def tell_users_activity_url(room):
     global session
     if room.activity_url is not None:
         users = room.users
+        activity_link = activityUrlLinkPrefix + room.activity_url + activityUrlLinkSuffix
         for user in users:
             if not user.activity_url_notified:
-                user_message = str(user.name) + ", here's your room link: " + str(room.activity_url)
+                user_message = str(user.name) + ", here's your activity link: " + activity_link
                 print("tell_users_activity_url: socket_id: " + user.socket_id + "    message: " + user_message,
                       flush=True)
                 socketio.emit('update_event', {'message': user_message, 'url': room.activity_url}, room=user.socket_id)
