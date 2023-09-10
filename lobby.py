@@ -611,6 +611,7 @@ def check_for_new_activity_urls():
                               " is " + str(activity_url))
                     else:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+                              " is None")
 
 
                 # TEMPORARILY FAKING activity_url RESPONSE
