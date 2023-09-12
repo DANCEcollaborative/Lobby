@@ -118,7 +118,7 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, lobby_initialized
-    print("getJupyterlabUrl: enter", flush=True)
+    # print("getJupyterlabUrl: enter", flush=True)
     if not lobby_initialized:
         initialize_lobby()
         lobby_initialized = True
@@ -144,13 +144,14 @@ def getJupyterlabUrl():
 
             # If user is not new
             if user is not None:
+                print("getJupyterlabUrl: user " + str(user_id) + " is NOT a new user")
                 user_info = {'user_id': str(user_id), 'name': str(name), 'email': str(email),
                              'password': str(password), 'entity_id': str(entity_id)}
                 duplicate_user = is_duplicate_user(user_info, user)
 
                 # If old non-duplicate user, delete and start over
                 if not duplicate_user:
-                    print("assigner: user " + str(user_id) + " is an old non-duplicate user -- starting over")
+                    print("getJupyterlabUrl: user " + str(user_id) + " is an old non-duplicate user -- starting over")
                     session.delete(user)
                     session.commit()
                     session = lobby_db.session
@@ -165,6 +166,7 @@ def getJupyterlabUrl():
 
                 # If duplicate user, they'll need a URL notification and maybe a room assignment
                 if duplicate_user:
+                    print("getJupyterlabUrl: user " + str(user_id) + " is a duplicate user")
                     user.activity_url_notified = False
                     session.add(user)
                     session.commit()
@@ -180,7 +182,9 @@ def getJupyterlabUrl():
                 session.commit()
                 session = lobby_db.session
 
+        print("getJupyterlabUrl: adding to user_queue")
         user_queue.put(current_user, user_id)
+        print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
     with condition:
         condition.notify_all()
