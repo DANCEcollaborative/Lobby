@@ -118,9 +118,9 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, lobby_initialized
-    print("lobby-direct.py, getJupyterlabUrl: enter", flush=True)
+    print("getJupyterlabUrl: enter", flush=True)
     if not lobby_initialized:
-        initialize_Lobby()
+        initialize_lobby()
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -611,18 +611,20 @@ def print_users():
         else:
             print("No rooms yet", flush=True)
 
-def initialize_Lobby():
+
+def initialize_lobby():
     global session
     with app.app_context():
         session = lobby_db.session
         lobby_db.drop_all()
         lobby_db.create_all()
         waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
-        print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
+        print("initialize_Lobby - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
         session.add(waiting_room)
         session.commit()
         # session = None
         session = lobby_db.session
+
 
 def assigner():
     # global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
@@ -647,7 +649,7 @@ def assigner():
         users_to_notify = []        # Clear any previously notified users from list to notify
         with condition:
             # Wait for a user to join
-            condition.wait()
+            # condition.wait()
 
             # current_time = time.time()
 
