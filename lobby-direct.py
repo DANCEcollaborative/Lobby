@@ -121,6 +121,7 @@ def getJupyterlabUrl():
     print("getJupyterlabUrl: enter", flush=True)
     if not lobby_initialized:
         initialize_lobby()
+        lobby_initialized = True
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -630,6 +631,8 @@ def assigner():
     # global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
     global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping
 
+    print("assigner - enter", flush=True)
+
     # Initialize Lobby
     # if not lobby_initialized:
     #     with app.app_context():
@@ -646,6 +649,7 @@ def assigner():
 
     # Repeat continuously while Lobby is running
     while True:
+        print("assigner - enter True loop", flush=True)
         users_to_notify = []        # Clear any previously notified users from list to notify
         with condition:
             # Wait for a user to join
@@ -655,6 +659,7 @@ def assigner():
 
             # Get users in the queue
             while not user_queue.empty():
+                print("assigner - enter 'while  not user_queue.empty()' loop", flush=True)
                 # current_user, user_id = user_queue.queue[0]
                 current_user, user_id = user_queue.get()
                 with app.app_context():
@@ -673,6 +678,7 @@ def assigner():
 
             # Get current list of unassigned users
             with app.app_context():
+                print("assigner - getting unassigned_users", flush=True)
                 unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(
                     User.start_time.asc()).all()
 
@@ -685,10 +691,12 @@ def assigner():
                 print_room_assignments()
 
             # Check for new activity URLs as they become available
+            print("assigner -- calling check_for_new_activity_urls()", flush=True)
             check_for_new_activity_urls()
 
             # Wake up all users in the group with new activity URLs or negative status
             for event in users_to_notify:
+                print("assigner -- about to event.set() to notify users", flush=True)
                 event.set()
 
             time.sleep(assigner_sleep_time)
