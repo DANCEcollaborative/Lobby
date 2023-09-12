@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 # Set the environment variable to run the Flask app
-ENV FLASK_APP=lobby.py
+ENV FLASK_APP=lobby-direct.py
 
 # Start gunicorn with the Flask app 'lobby'
 #CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "lobby:app", "--worker-class", "eventlet", "--log-level", "debug"]
