@@ -118,10 +118,10 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, lobby_initialized
-    # print("getJupyterlabUrl: enter", flush=True)
-    if not lobby_initialized:
-        initialize_lobby()
-        lobby_initialized = True
+    print("getJupyterlabUrl: enter", flush=True)
+    # if not lobby_initialized:
+    #     initialize_lobby()
+    #     lobby_initialized = True
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -727,6 +727,7 @@ consumer_thread.start()
 
 if __name__ == '__main__':
     session = lobby_db.session
+    initialize_lobby()
     # threading.Thread(target=assigner, daemon=True).start()
     # user_thread = threading.Thread(target=assigner)
     # user_thread.daemon = True
