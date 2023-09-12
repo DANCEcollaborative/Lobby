@@ -127,6 +127,7 @@ def getJupyterlabUrl():
     thread_name = "thread" + str(nextThreadNum)
     event = threading.Event()
     eventMapping[event_name] = event
+    user_id = "not set"
     with thread_lock:
         current_user = threading.current_thread()
         threadMapping[thread_name] = current_user
@@ -187,7 +188,7 @@ def getJupyterlabUrl():
         print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
     with condition:
-        print("getJupyterlabUrl: executing 'condition.notify_all()'")
+        print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id)
         condition.notify_all()
 
     print("getJupyterlabUrl: about to 'event.wait()'")
@@ -641,6 +642,17 @@ def assigner():
     global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping
 
     print("assigner - enter", flush=True)
+
+    while True:
+        print("assigner - enter outer True loop", flush=True)
+        with condition:
+            print("assigner - about to condition.wait()", flush=True)
+            condition.wait()
+            print("assigner - completed condition.wait()", flush=True)
+            while not user_queue.empty():
+                print("assigner - enter test 'while not user_queue.empty()' loop", flush=True)
+                current_user, user_id = user_queue.get()
+                print("assigner - test loop -- user_id = " + user_id, flush=True)
 
     # Initialize Lobby
     # if not lobby_initialized:
