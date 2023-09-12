@@ -183,23 +183,23 @@ def getJupyterlabUrl():
                 session.commit()
                 session = lobby_db.session
 
-        print("getJupyterlabUrl: adding to user_queue")
+        print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
         print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
     with condition:
-        print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id)
+        print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id, flush=True)
         condition.notify_all()
 
-    print("getJupyterlabUrl: about to 'event.wait()'")
+    print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
     event.wait()
-    print("getJupyterlabUrl: returned from 'event.wait()'")
+    print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
-        print("getJupyterlabUrl: code 200; returning URL")
+        print("getJupyterlabUrl: code 200; returning URL", flush=True)
         return current_user.url
     else:
-        print("getJupyterlabUrl: returning negative code: " + str(current_user.code))
+        print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
         return current_user.code
 
 
@@ -725,6 +725,9 @@ def assigner():
 
 if __name__ == '__main__':
     session = lobby_db.session
-    threading.Thread(target=assigner, daemon=True).start()
+    # threading.Thread(target=assigner, daemon=True).start()
+    user_thread = threading.Thread(target=assigner)
+    user_thread.daemon = True
+    user_thread.start()
     # initialize_Lobby()
     app.run(debug=True)
