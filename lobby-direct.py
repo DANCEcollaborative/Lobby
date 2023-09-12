@@ -28,7 +28,7 @@ maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
 maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
 fillRoomsUnderTarget = True
 overFillRooms = True
-lobby_initialized = False
+# lobby_initialized = False
 assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 unassigned_users = []       # Users with no room assignment
 users_to_notify = []        # Users with assigned URL
@@ -609,23 +609,36 @@ def print_users():
         else:
             print("No rooms yet", flush=True)
 
+def initialize_Lobby():
+    global session
+    with app.app_context():
+        session = lobby_db.session
+        lobby_db.drop_all()
+        lobby_db.create_all()
+        waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
+        print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
+        session.add(waiting_room)
+        session.commit()
+        # session = None
+        session = lobby_db.session
 
 def assigner():
-    global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
+    # global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
+    global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping
 
     # Initialize Lobby
-    if not lobby_initialized:
-        with app.app_context():
-            session = lobby_db.session
-            lobby_db.drop_all()
-            lobby_db.create_all()
-            waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
-            print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
-            session.add(waiting_room)
-            session.commit()
-            # session = None
-            session = lobby_db.session
-            lobby_initialized = True
+    # if not lobby_initialized:
+    #     with app.app_context():
+    #         session = lobby_db.session
+    #         lobby_db.drop_all()
+    #         lobby_db.create_all()
+    #         waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
+    #         print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
+    #         session.add(waiting_room)
+    #         session.commit()
+    #         # session = None
+    #         session = lobby_db.session
+    #         lobby_initialized = True
 
     # Repeat continuously while Lobby is running
     while True:
@@ -680,4 +693,5 @@ def assigner():
 if __name__ == '__main__':
     session = lobby_db.session
     threading.Thread(target=assigner, daemon=True).start()
+    initialize_Lobby()
     app.run(debug=True)
