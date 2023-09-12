@@ -639,7 +639,7 @@ def initialize_lobby():
 
 def assigner():
     # global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
-    global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue
+    global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, lobby_initialized
 
     print("assigner - enter", flush=True)
 
@@ -655,18 +655,18 @@ def assigner():
     #             print("assigner - test loop -- user_id = " + user_id, flush=True)
 
     # Initialize Lobby
-    # if not lobby_initialized:
-    #     with app.app_context():
-    #         session = lobby_db.session
-    #         lobby_db.drop_all()
-    #         lobby_db.create_all()
-    #         waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
-    #         print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
-    #         session.add(waiting_room)
-    #         session.commit()
-    #         # session = None
-    #         session = lobby_db.session
-    #         lobby_initialized = True
+    if not lobby_initialized:
+        with app.app_context():
+            session = lobby_db.session
+            lobby_db.drop_all()
+            lobby_db.create_all()
+            waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
+            print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
+            session.add(waiting_room)
+            session.commit()
+            # session = None
+            session = lobby_db.session
+            lobby_initialized = True
 
     # Repeat continuously while Lobby is running
     while True:
