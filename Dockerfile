@@ -18,3 +18,4 @@ ENV FLASK_APP=lobby-direct.py
 # Start gunicorn with the Flask app 'lobby'
 #CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "lobby:app", "--worker-class", "eventlet", "--log-level", "debug"]
 CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "lobby:app", "--worker-class", "eventlet"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "lobby-direct:app", "--worker-class", "eventlet"]
