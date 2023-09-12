@@ -187,13 +187,18 @@ def getJupyterlabUrl():
         print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
     with condition:
+        print("getJupyterlabUrl: executing 'condition.notify_all()'")
         condition.notify_all()
 
+    print("getJupyterlabUrl: about to 'event.wait()'")
     event.wait()
+    print("getJupyterlabUrl: returned from 'event.wait()'")
 
     if current_user.code == 200:
+        print("getJupyterlabUrl: code 200; returning URL")
         return current_user.url
     else:
+        print("getJupyterlabUrl: returning negative code: " + str(current_user.code))
         return current_user.code
 
 
