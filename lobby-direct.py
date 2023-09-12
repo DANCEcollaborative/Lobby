@@ -28,7 +28,7 @@ maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
 maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
 fillRoomsUnderTarget = True
 overFillRooms = True
-# lobby_initialized = False
+lobby_initialized = False
 assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
 unassigned_users = []       # Users with no room assignment
 users_to_notify = []        # Users with assigned URL
@@ -117,8 +117,10 @@ class User(lobby_db.Model):
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
-    global user_queue, session, nextThreadNum, threadMapping, eventMapping
+    global user_queue, session, nextThreadNum, threadMapping, eventMapping, lobby_initialized
     print("lobby-direct.py, getJupyterlabUrl: enter", flush=True)
+    if not lobby_initialized:
+        initialize_Lobby()
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -693,5 +695,5 @@ def assigner():
 if __name__ == '__main__':
     session = lobby_db.session
     threading.Thread(target=assigner, daemon=True).start()
-    initialize_Lobby()
+    # initialize_Lobby()
     app.run(debug=True)
