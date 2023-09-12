@@ -6,10 +6,11 @@ import threading
 import queue
 import json
 import requests
-from enum import Enum
-from flask import Flask, request, render_template, jsonify
+# from enum import Enum
+from flask import Flask, request
+# from flask import Flask, request, render_template, jsonify
 # from flask import Flask, request, render_template
-from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 # from sqlalchemy.orm import sessionmaker
@@ -46,6 +47,9 @@ userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
 nextRoomNum = 200
+nextThreadNum = 0
+threadMapping = {}
+eventMapping = {}
 # rooms = {}
 moduleSlug = 'ope-learn-practice-p032vbfd'
 namespace = 'default'
@@ -90,26 +94,39 @@ class User(lobby_db.Model):
     password = lobby_db.Column(lobby_db.String(100), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
-    ope_namespace = namespace
-    agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
-    socket_id = lobby_db.Column(lobby_db.String(50))
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     room_name = lobby_db.Column(lobby_db.String(50))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
+    activity_URL = lobby_db.Column(lobby_db.String(100), primary_key=False)
     activity_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
+    ope_namespace = namespace
+    agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
+    thread_name = lobby_db.Column(lobby_db.String(12), primary_key=False)
+    event_name = lobby_db.Column(lobby_db.String(12), primary_key=False)
     room = lobby_db.relationship('Room', back_populates='users')
 
     def __repr__(self):
         return f'<User {self.user_id}>'
+#
+#
+# class NamedEvent(threading.Event):
+#     def __init__(self, name):
+#         super().__init__()
+#         self.name = name
 
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
-    global user_queue, session
+    global user_queue, session, nextThreadNum, threadMapping, eventMapping
     print("getJupyterlabUrl: enter", flush=True)
+    nextThreadNum += 1
+    event_name = "event" + str(nextThreadNum)
+    thread_name = "thread" + str(nextThreadNum)
     event = threading.Event()
+    eventMapping[event_name] = event
     with thread_lock:
         current_user = threading.current_thread()
+        threadMapping[thread_name] = current_user
         current_user.event = event
         data = json.loads(request.data.decode('utf-8'))
         name = data.get('name')
@@ -119,14 +136,13 @@ def getJupyterlabUrl():
         user_id = email_to_dns(email)
         print(f"getJupyterlabUrl -- user_id: {user_id} -- name: {name} -- email: {email}",
               flush=True)
-        user_info = {'user_id': str(user_id), 'name': str(name), 'email': str(email),
-                     'password': str(password), 'entity_id': str(entity_id)}
         with app.app_context():
             user = User.query.filter_by(user_id=user_id).first()
 
             # If user is not new
             if user is not None:
-
+                user_info = {'user_id': str(user_id), 'name': str(name), 'email': str(email),
+                             'password': str(password), 'entity_id': str(entity_id)}
                 duplicate_user = is_duplicate_user(user_info, user)
 
                 # If old non-duplicate user, delete and start over
@@ -139,7 +155,7 @@ def getJupyterlabUrl():
                         unassigned_users.remove(user)
                     user = User(user_id=user_id, name=name, email=email, password=password,
                                 entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
-                                activity_url_notified=False)
+                                activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                     session.add(user)
                     session.commit()
                     session = lobby_db.session
@@ -156,17 +172,22 @@ def getJupyterlabUrl():
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user")
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
-                            activity_url_notified=False)
+                            activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                 session.add(user)
                 session.commit()
                 session = lobby_db.session
 
-        user_queue.put(user_id, user)
+        user_queue.put(current_user, user_id)
 
     with condition:
         condition.notify_all()
 
     event.wait()
+
+    if current_user.code == 200:
+        return current_user.url
+    else:
+        return current_user.code
 
 
 def request_session_then_users(room):
@@ -196,16 +217,13 @@ def request_session_then_users(room):
     headers = {'Content-Type': 'application/json'}
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
-    # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
         print("request_session_then_users: POST successful", flush=True)
         with app.app_context():
             for user in room.users:
                 request_user(user, room)
-        # return str(result)
     else:
         print("request_session_then_users: POST failed -- response code " + str(response.status_code))
-        # return None
 
 
 def request_session_plus_users(room):
@@ -217,7 +235,6 @@ def request_session_plus_users(room):
         i = 0
         while i < room.num_users:
             user = room.users[i]
-            # user_element = {'namespace': namespace, 'name': email_to_dns(user.email)}
             user_element = {"name": user.name, "email": user.email, "password": user.password}
             user_list.append(user_element)
             i += 1
@@ -235,13 +252,10 @@ def request_session_plus_users(room):
     headers = {'Content-Type': 'application/json'}
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
-    # {Change the following to continue posting requests for awhile until successful?}
     if response.status_code == 200:
         print("request_session_plus_users: POST successful", flush=True)
-        # return str(result)
     else:
         print("request_session_plus_users: POST failed -- response code " + str(response.status_code))
-        # return None
 
 
 def request_user(user, room):
@@ -281,7 +295,7 @@ def request_user(user, room):
 
 
 def request_room_status(room):
-    global generalRequestPrefix, sessionRequestPath, moduleSlug
+    global generalRequestPrefix, sessionReadinessPath, moduleSlug
     with app.app_context():
         request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + moduleSlug + \
                       "-" + room.room_name
@@ -303,7 +317,7 @@ def request_room_status(room):
 
 
 def request_room_status_without_module_slug(room):
-    global generalRequestPrefix, sessionRequestPath, moduleSlug
+    global generalRequestPrefix, sessionReadinessPath, moduleSlug
     with app.app_context():
         request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + room.room_name
         print("request_room_status_without_module_slug -- request_url: " + request_url, flush=True)
@@ -327,7 +341,7 @@ def check_for_new_activity_urls():
     with app.app_context():
         rooms = Room.query.all()
         for room in rooms:
-            activity_url = None
+            # activity_url = None
             if room.room_name != "waiting_room" and room.activity_url is None:
                 wait_time = time.time() - room.start_time.timestamp()
                 print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
@@ -340,7 +354,7 @@ def check_for_new_activity_urls():
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
                               " is " + str(activity_url))
                         room.activity_url = activity_url
-                        # tell_users_activity_url(room)
+                        assign_users_activity_url(room)
                         session.add(room)
                         session.commit()
                         session = lobby_db.session
@@ -348,13 +362,25 @@ def check_for_new_activity_urls():
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
                               " is None")
 
-                # if activity_url is not None:
-                #     room.activity_url = activity_url
-                #     # tell_users_activity_url(room)
-                #     session.add(room)
-                #     session.commit()
-                #     session = lobby_db.session
 
+def assign_users_activity_url(room):
+    global session, users_to_notify, threadMapping
+    with app.app_context():
+        activity_url = room.activity_url
+        if activity_url is not None:
+            users = room.users
+            # activity_link = activityUrlLinkPrefix + room.activity_url + activityUrlLinkSuffix
+            for user in users:
+                user.activity_url = activity_url
+                print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+                session.add(user)
+                session.commit()
+                session = lobby_db.session
+                user_thread = threadMapping[user.thread_name]
+                user_thread.code = 200
+                user_thread.url = activity_url
+                user_event = eventMapping[user.event_name]
+                users_to_notify.append(user_event)
 
 
 def email_to_dns(email):
@@ -523,7 +549,7 @@ def assign_room(user, room, is_room_new):
 
 
 def prune_users():
-    global unassigned_users, session
+    global unassigned_users, session, threadMapping, users_to_notify
     for user in unassigned_users:
         with app.app_context():
             if (time.time() - user.start_time.timestamp()) >= maxWaitTimeUntilGiveUp:
@@ -531,22 +557,29 @@ def prune_users():
                     ": I'm sorry. There are not enough other users logged in right now to start a session. \
                     Please try again later."
                 print("prune_users: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
-                # socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
                 unassigned_users.remove(user)
                 User.query.filter(User.id == user.id).delete()
                 session.commit()
                 session = lobby_db.session
+                user_thread = threadMapping[user.thread_name]
+                user_thread.code = 408
+                user_event = eventMapping[user.event_name]
+                users_to_notify.append(user_event)
+
     return unassigned_users
 
 
 def prune_room(room):
-    global session
+    global session, users_to_notify
     with app.app_context():
         for user in room.users:
             user_message = str(user.name) + \
                 ", I'm sorry. There is no session available right now. Please try again later."
             print("prune_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
-            # socketio.emit('update_event', {'message': user_message}, room=user.socket_id)
+            user_thread = threadMapping[user.thread_name]
+            user_thread.code = 404
+            user_event = eventMapping[user.event_name]
+            users_to_notify.append(user_event)
             User.query.filter(User.id == user.id).delete()
             session.commit()
             session = lobby_db.session
@@ -577,9 +610,8 @@ def print_users():
             print("No rooms yet", flush=True)
 
 
-
 def assigner():
-    global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify
+    global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
 
     # Initialize Lobby
     if not lobby_initialized:
@@ -606,7 +638,8 @@ def assigner():
 
             # Get users in the queue
             while not user_queue.empty():
-                user_id, user = user_queue.queue[0]
+                # current_user, user_id = user_queue.queue[0]
+                current_user, user_id = user_queue.get()
                 with app.app_context():
                     user = User.query.filter_by(user_id=user_id).first()
                     user.activity_url_notified = False  # User needs at least a URL returned
@@ -637,12 +670,11 @@ def assigner():
             # Check for new activity URLs as they become available
             check_for_new_activity_urls()
 
-            # Wake up all users in the group with new activity URLs
-            for user in users_to_notify:
-                user.event.set()
+            # Wake up all users in the group with new activity URLs or negative status
+            for event in users_to_notify:
+                event.set()
 
             time.sleep(assigner_sleep_time)
-
 
 
 if __name__ == '__main__':
