@@ -127,9 +127,9 @@ def getJupyterlabUrl():
     thread_name = "thread" + str(nextThreadNum)
     event = threading.Event()
     eventMapping[event_name] = event
-    user_id = "not set"
+    # user_id = "not set"
     with thread_lock:
-        current_user = threading.current_thread()
+        current_user = threading.Thread()
         threadMapping[thread_name] = current_user
         current_user.event = event
         data = json.loads(request.data.decode('utf-8'))
@@ -187,9 +187,9 @@ def getJupyterlabUrl():
         user_queue.put((current_user, user_id))
         print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
-    with condition:
-        print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id, flush=True)
-        condition.notify_all()
+    # with condition:
+    #     print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id, flush=True)
+    #     condition.notify_all()
 
     print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
     event.wait()
@@ -630,7 +630,7 @@ def initialize_lobby():
         lobby_db.drop_all()
         lobby_db.create_all()
         waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
-        print("initialize_Lobby - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
+        print("initialize_lobby - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
         session.add(waiting_room)
         session.commit()
         # session = None
@@ -673,10 +673,9 @@ def assigner():
         print("assigner - enter True loop", flush=True)
         users_to_notify = []        # Clear any previously notified users from list to notify
         with condition:
+
             # Wait for a user to join
             # condition.wait()
-
-            # current_time = time.time()
 
             # Get users in the queue
             while not user_queue.empty():
@@ -723,11 +722,14 @@ def assigner():
             time.sleep(assigner_sleep_time)
 
 
+consumer_thread = threading.Thread(target=assigner, daemon=True)
+consumer_thread.start()
+
 if __name__ == '__main__':
     session = lobby_db.session
     # threading.Thread(target=assigner, daemon=True).start()
-    user_thread = threading.Thread(target=assigner)
-    user_thread.daemon = True
-    user_thread.start()
-    # initialize_Lobby()
+    # user_thread = threading.Thread(target=assigner)
+    # user_thread.daemon = True
+    # user_thread.start()
+    # initialize_lobby()
     app.run(debug=True)
