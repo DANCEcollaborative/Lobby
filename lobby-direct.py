@@ -191,9 +191,9 @@ def getJupyterlabUrl():
         print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id, flush=True)
         condition.notify_all()
 
-    # print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
-    # event.wait()
-    # print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
+    print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
+    event.wait()
+    print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
         print("getJupyterlabUrl: code 200; returning URL", flush=True)
