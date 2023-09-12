@@ -183,7 +183,7 @@ def getJupyterlabUrl():
                 session = lobby_db.session
 
         print("getJupyterlabUrl: adding to user_queue")
-        user_queue.put(current_user, user_id)
+        user_queue.put((current_user, user_id))
         print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
     with condition:
