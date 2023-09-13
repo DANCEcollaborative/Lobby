@@ -94,7 +94,7 @@ class User(lobby_db.Model):
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     room_name = lobby_db.Column(lobby_db.String(50))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
-    activity_URL = lobby_db.Column(lobby_db.String(100), primary_key=False)
+    activity_url = lobby_db.Column(lobby_db.String(100), primary_key=False)
     activity_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
     ope_namespace = namespace
     agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
