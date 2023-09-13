@@ -18,5 +18,5 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: testpwd
 networks:
-  - lobby-net:
-      driver: bridge
+  lobby-net:
+    driver: bridge
