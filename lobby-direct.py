@@ -180,20 +180,20 @@ def getJupyterlabUrl():
                 session.commit()
                 session = lobby_db.session
 
-        print("getJupyterlabUrl: adding to user_queue", flush=True)
+        # print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
-        print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
+        # print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
     # with condition:
     #     print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id, flush=True)
     #     condition.notify_all()
 
-    print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
+    # print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
     event.wait()
-    print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
+    # print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
-        print("getJupyterlabUrl: code 200; returning URL", flush=True)
+        print("getJupyterlabUrl: code 200; returning URL: " + current_user.url, flush=True)
         return current_user.url
     else:
         print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
@@ -239,7 +239,7 @@ def request_session_then_users(room):
 def request_session_plus_users(room):
     global generalRequestPrefix, sessionPlusUsersRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
     request_url = generalRequestPrefix + "/" + sessionPlusUsersRequestPath
-    print("request_session_plus_users -- request_url: " + request_url, flush=True)
+    # print("request_session_plus_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
         i = 0
@@ -309,7 +309,7 @@ def request_room_status(room):
     with app.app_context():
         request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + moduleSlug + \
                       "-" + room.room_name
-        print("request_room_status -- request_url: " + request_url, flush=True)
+        # print("request_room_status -- request_url: " + request_url, flush=True)
         # with app.app_context():
         # data = {
         # }
@@ -531,13 +531,13 @@ def assign_rooms_under_n_users(n_users):
 
 
 def assign_up_to_n_users(room, num_users, is_room_new):
-    print("assign_up_to_n_users - incoming num_users: " + str(num_users))
+    # print("assign_up_to_n_users - incoming num_users: " + str(num_users))
     global unassigned_users
     while (len(room.users) < num_users) and (len(unassigned_users) > 0):
         user = unassigned_users[0]
         assign_room(user, room, is_room_new)
         unassigned_users.remove(user)
-    print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
+    # print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
 
 
 # 1. Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
@@ -559,12 +559,12 @@ def get_sorted_available_rooms(max_users):
             if (time_diff < maxRoomAgeForNewUsers) and (room.room_name != "waiting_room"):
                 if len(room.users) < max_users:
                     room_list.append(room)
-        print("get_sorted_available_rooms:")
-        if len(room_list) > 0:
-            for room in room_list:
-                print("   " + room.room_name + "  -  users: " + (str(len(room.users))))
-        else:
-            print("   no rooms available")
+        # print("get_sorted_available_rooms:")
+        # if len(room_list) > 0:
+            # for room in room_list:
+            #     print("   " + room.room_name + "  -  users: " + (str(len(room.users))))
+        # else:
+            # print("   no rooms available")
     return room_list
 
 
@@ -591,7 +591,7 @@ def assign_new_room(num_users):
         assign_up_to_n_users(room, num_users, is_room_new)
         request_session_plus_users(room)
 
-    print("assign_new_room - room.num_users: " + str(room.num_users))
+    # print("assign_new_room - room.num_users: " + str(room.num_users))
 
 
 def assign_room(user, room, is_room_new):
@@ -682,7 +682,7 @@ def assigner():
     # global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
     global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, lobby_initialized
 
-    print("assigner - enter", flush=True)
+    # print("assigner - enter", flush=True)
 
     # while True:
     #     print("assigner - enter outer True loop", flush=True)
@@ -702,7 +702,7 @@ def assigner():
             lobby_db.drop_all()
             lobby_db.create_all()
             waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
-            print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
+            # print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
             session.add(waiting_room)
             session.commit()
             # session = None
@@ -711,7 +711,7 @@ def assigner():
 
     # Repeat continuously while Lobby is running
     while True:
-        print("assigner - enter True loop", flush=True)
+        # print("assigner - enter True loop", flush=True)
         users_to_notify = []        # Clear any previously notified users from list to notify
         with condition:
 
@@ -720,7 +720,7 @@ def assigner():
 
             # Get users in the queue
             while not user_queue.empty():
-                print("assigner - enter 'while  not user_queue.empty()' loop", flush=True)
+                # print("assigner - enter 'while  not user_queue.empty()' loop", flush=True)
                 # current_user, user_id = user_queue.queue[0]
                 current_user, user_id = user_queue.get()
                 with app.app_context():
@@ -739,7 +739,7 @@ def assigner():
 
             # Get current list of unassigned users
             with app.app_context():
-                print("assigner - getting unassigned_users", flush=True)
+                # print("assigner - getting unassigned_users", flush=True)
                 unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(
                     User.start_time.asc()).all()
 
@@ -752,12 +752,12 @@ def assigner():
                 print_room_assignments()
 
             # Check for new activity URLs as they become available
-            print("assigner -- calling check_for_new_activity_urls()", flush=True)
+            # print("assigner -- calling check_for_new_activity_urls()", flush=True)
             check_for_new_activity_urls()
 
             # Wake up all users in the group with new activity URLs or negative status
             for event in users_to_notify:
-                print("assigner -- about to event.set() to notify users", flush=True)
+                # print("assigner -- about to event.set() to notify users", flush=True)
                 event.set()
 
             time.sleep(assigner_sleep_time)
