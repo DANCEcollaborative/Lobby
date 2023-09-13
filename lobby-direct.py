@@ -20,7 +20,7 @@ condition = threading.Condition()
 targetUsersPerRoom = 4
 minUsersPerRoom = 2
 maxUsersPerRoom = 5
-maxWaitTimeForSubOptimalAssignment = 10        # seconds
+maxWaitTimeForSubOptimalAssignment = 10        # seconds    >>> UPDATE THIS <<<
 maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
 maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
 fillRoomsUnderTarget = True
@@ -43,7 +43,7 @@ sessionPlusUsersRequestPath = 'scheduleSession'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 230
+nextRoomNum = 1000
 nextThreadNum = 0
 threadMapping = {}
 eventMapping = {}
@@ -142,14 +142,15 @@ def getJupyterlabUrl():
 
             # If user is not new
             if user is not None:
-                print("getJupyterlabUrl: user " + str(user_id) + " is NOT a new user")
+                print("getJupyterlabUrl: user " + str(user_id) + " is NOT a new user", flush=True)
                 user_info = {'user_id': str(user_id), 'name': str(name), 'email': str(email),
                              'password': str(password), 'entity_id': str(entity_id)}
                 duplicate_user = is_duplicate_user(user_info, user)
 
                 # If old non-duplicate user, delete and start over
                 if not duplicate_user:
-                    print("getJupyterlabUrl: user " + str(user_id) + " is an old non-duplicate user -- starting over")
+                    print("getJupyterlabUrl: user " + str(user_id) + " is an old non-duplicate user -- starting over",
+                          flush=True)
                     session.delete(user)
                     session.commit()
                     session = lobby_db.session
@@ -164,7 +165,7 @@ def getJupyterlabUrl():
 
                 # If duplicate user, they'll need a URL notification and maybe a room assignment
                 if duplicate_user:
-                    print("getJupyterlabUrl: user " + str(user_id) + " is a duplicate user")
+                    print("getJupyterlabUrl: user " + str(user_id) + " is a duplicate user", flush=True)
                     user.activity_url_notified = False
                     session.add(user)
                     session.commit()
@@ -172,7 +173,7 @@ def getJupyterlabUrl():
 
             # New user
             if user is None:
-                print("getJupyterlabUrl: user " + str(user_id) + " is a new user")
+                print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name)
@@ -233,7 +234,7 @@ def request_session_then_users(room):
             for user in room.users:
                 request_user(user, room)
     else:
-        print("request_session_then_users: POST failed -- response code " + str(response.status_code))
+        print("request_session_then_users: POST failed -- response code " + str(response.status_code), flush=True)
 
 
 def request_session_plus_users(room):
@@ -295,12 +296,12 @@ def request_user(user, room):
     if response.status_code == 200:
         # response_data = response.json()
         # result = response_data.get('result')
-        # print("request_user: POST successful")
-        # print("request_user, result: " + str(result))
-        print("request_user: POST succeeded")
+        # print("request_user: POST successful", flush=True)
+        # print("request_user, result: " + str(result), flush=True)
+        print("request_user: POST succeeded", flush=True)
         # return str(result)
     else:
-        print("request_user: POST failed -- response code " + str(response.status_code))
+        print("request_user: POST failed -- response code " + str(response.status_code), flush=True)
         # return None
 
 
@@ -318,11 +319,11 @@ def request_room_status(room):
     response = requests.get(request_url)
 
     if response.status_code == 200:
-        print("request_room_status succeeded -- response code " + str(response.status_code))
+        print("request_room_status succeeded -- response code " + str(response.status_code), flush=True)
         response_data = response.text
         return response_data
     else:
-        print("request_room_status failed -- response code " + str(response.status_code))
+        print("request_room_status failed -- response code " + str(response.status_code), flush=True)
         return None
 
 
@@ -342,8 +343,9 @@ def request_room_status_without_module_slug(room):
         response_data = response.text
         return response_data
     else:
-        print("request_room_status_without_module_slug failed -- response code " + str(response.status_code))
-#         return None
+        print("request_room_status_without_module_slug failed -- response code " + str(response.status_code),
+              flush=True)
+        return None
 #
 #
 # def check_for_new_activity_urls():
@@ -361,7 +363,7 @@ def request_room_status_without_module_slug(room):
 #                     activity_url = request_room_status(room)
 #                     if activity_url is not None:
 #                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-#                               " is " + str(activity_url))
+#                               " is " + str(activity_url), flush=True)
 #                         room.activity_url = activity_url
 #                         # assign_users_activity_url(room)
 #                         session.add(room)
@@ -370,7 +372,7 @@ def request_room_status_without_module_slug(room):
 #                         assign_users_activity_url(room)
 #                     else:
 #                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-#                               " is None")
+#                               " is None", flush=True)
 
 
 # def assign_users_activity_url(room):
@@ -409,14 +411,14 @@ def check_for_new_activity_urls():
                     activity_url = request_room_status(room)
                     if activity_url is not None:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                              " is " + str(activity_url))
+                              " is " + str(activity_url), flush=True)
                         room.activity_url = activity_url
                         # assign_users_activity_url(room)
                         session.add(room)
                         assign_users_activity_url(room)
                     else:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                              " is None")
+                              " is None", flush=True)
         session.commit()
         session = lobby_db.session
 
@@ -427,7 +429,9 @@ def assign_users_activity_url(room):
     activity_url = room.activity_url
     if activity_url is not None:
         users = room.users
-            # activity_link = activityUrlLinkPrefix + room.activity_url + activityUrlLinkSuffix
+    else:
+        print("assign_users_activity_url: activity_url is None -- returning", flush=True)
+        return
     for user in users:
         # with app.app_context():
         user.activity_url = activity_url
@@ -445,7 +449,7 @@ def assign_users_activity_url(room):
 def email_to_dns(email):
     email1 = email.replace('@', '-at-')
     email2 = email1.replace('.', '-')
-    # print("email_to_dns - original: " + email + "  -- dns: " + email2)
+    # print("email_to_dns - original: " + email + "  -- dns: " + email2, flush=True)
     return email2
 
 
@@ -531,13 +535,13 @@ def assign_rooms_under_n_users(n_users):
 
 
 def assign_up_to_n_users(room, num_users, is_room_new):
-    # print("assign_up_to_n_users - incoming num_users: " + str(num_users))
+    # print("assign_up_to_n_users - incoming num_users: " + str(num_users), flush=True)
     global unassigned_users
     while (len(room.users) < num_users) and (len(unassigned_users) > 0):
         user = unassigned_users[0]
         assign_room(user, room, is_room_new)
         unassigned_users.remove(user)
-    # print("assign_up_to_n_users - final room.num_users: " + str(room.num_users))
+    # print("assign_up_to_n_users - final room.num_users: " + str(room.num_users), flush=True)
 
 
 # 1. Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
@@ -552,19 +556,19 @@ def get_sorted_available_rooms(max_users):
         sorted_rooms = Room.query.order_by(Room.num_users.asc(), Room.start_time.asc()).all()
         for room in sorted_rooms:
             if room.room_name != "waiting_room":
-                print("   " + room.room_name + "  -  users: " + (str(len(room.users))))
+                print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         current_time = time.time()
         for room in sorted_rooms:
             time_diff = current_time - room.start_time.timestamp()
             if (time_diff < maxRoomAgeForNewUsers) and (room.room_name != "waiting_room"):
                 if len(room.users) < max_users:
                     room_list.append(room)
-        # print("get_sorted_available_rooms:")
+        # print("get_sorted_available_rooms:", flush=True)
         # if len(room_list) > 0:
             # for room in room_list:
-            #     print("   " + room.room_name + "  -  users: " + (str(len(room.users))))
+            #     print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         # else:
-            # print("   no rooms available")
+            # print("   no rooms available", flush=True)
     return room_list
 
 
@@ -591,7 +595,7 @@ def assign_new_room(num_users):
         assign_up_to_n_users(room, num_users, is_room_new)
         request_session_plus_users(room)
 
-    # print("assign_new_room - room.num_users: " + str(room.num_users))
+    # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)
 
 
 def assign_room(user, room, is_room_new):
@@ -734,8 +738,15 @@ def assigner():
                         session.add(user)
                         session.commit()
                         session = lobby_db.session
-                        print("assigner: adding user " + str(user_id) + " to unassigned_users")
+                        print("assigner: adding user " + str(user_id) + " to unassigned_users", flush=True)
                         unassigned_users.append(user)
+
+                    # If user has previously logged in and received an activity URL, just send it
+                    if user.activity_url is not None:
+                        print("assigner: resending activity_url to user " + str(user_id) +
+                              " -- activity_url: " + user.activity_url, flush=True)
+                        user_event = eventMapping[user.event_name]
+                        users_to_notify.append(user_event)
 
             # Get current list of unassigned users
             with app.app_context():
