@@ -43,7 +43,7 @@ sessionPlusUsersRequestPath = 'scheduleSession'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 200
+nextRoomNum = 210
 nextThreadNum = 0
 threadMapping = {}
 eventMapping = {}
@@ -364,10 +364,11 @@ def check_for_new_activity_urls():
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
                               " is " + str(activity_url))
                         room.activity_url = activity_url
-                        assign_users_activity_url(room)
+                        # assign_users_activity_url(room)
                         session.add(room)
                         session.commit()
                         session = lobby_db.session
+                        assign_users_activity_url(room)
                     else:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
                               " is None")
@@ -375,7 +376,7 @@ def check_for_new_activity_urls():
 
 def assign_users_activity_url(room):
     global session, users_to_notify, threadMapping
-    with app.app_context():
+    # with app.app_context():
         activity_url = room.activity_url
         if activity_url is not None:
             users = room.users
