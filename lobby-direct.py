@@ -376,7 +376,7 @@ def check_for_new_activity_urls():
 
 def assign_users_activity_url(room):
     global session, users_to_notify, threadMapping
-    # with app.app_context():
+    with app.app_context():
         activity_url = room.activity_url
         if activity_url is not None:
             users = room.users
