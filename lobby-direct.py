@@ -1,6 +1,6 @@
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import threading
 import queue
@@ -12,48 +12,52 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 
-# Queue to pass incoming users
+# ROOM ALLOCATION CONSTANTS
+TARGET_USER_PER_ROOM = 4
+MIN_USERS_PER_ROOM = 2
+MAX_USERS_PER_ROOM = 5
+FILL_ROOMS_UNDER_TARGET = True
+OVERFILL_ROOMS = True
+
+# TIME CONSTANTS
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 10        # seconds    >>> UPDATE THIS <<<
+MAX_WAIT_TIME_UNTIL_GIVE_UP = 70                    # seconds    >>> UPDATE THIS <<<
+MAX_ROOM_AGE_FOR_NEW_USERS = 60                     # seconds    >>> UPDATE THIS <<<
+ASSIGNER_SLEEP_TIME = 1     # sleep time in seconds between assigner iterations
+# ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60         # seconds    >>> UPDATE THIS <<<
+ELAPSED_TIME_UNTIL_USER_DELETION = 5 * 60           # seconds    >>> TEMPORARY <<<
+CHECK_FOR_USER_DELETION_WAIT_TIME = 60
+
+# KUBERNETES- and URL-RELATED CONSTANTS
+OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
+OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
+LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
+LOBBY_URL_PREFIX = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
+GENERAL_REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
+ACTIVITY_URL_LINK_PREFIX = '<a href="'
+ACTIVITY_URL_LINK_SUFFIX = '">OPE Session</a>'
+SESSION_ONLY_REQUEST_PATH = 'opesessions'
+SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
+USER_REQUEST_PATH = 'opeusers'
+SESSION_READINESS_PATH = 'sessionReadiness'
+MODULE_SLUG = 'ope-learn-practice-p032vbfd'
+NAMESPACE = 'default'
+ROOM_PREFIX = "room"
+
+# GLOBAL VARIABLES
+lobby_initialized = False
+unassigned_users = []       # Users with no room assignment
+users_to_notify = []        # Users with assigned URL
+nextRoomNum = 2000
+nextThreadNum = 0
+
+# Threading variables
 user_queue = queue.Queue()
 thread_lock = threading.Lock()
 condition = threading.Condition()
-
-targetUsersPerRoom = 4
-minUsersPerRoom = 2
-maxUsersPerRoom = 5
-maxWaitTimeForSubOptimalAssignment = 10        # seconds    >>> UPDATE THIS <<<
-maxWaitTimeUntilGiveUp = 70                    # seconds    >>> UPDATE THIS <<<
-maxRoomAgeForNewUsers = 60                     # seconds    >>> UPDATE THIS <<<
-fillRoomsUnderTarget = True
-overFillRooms = True
-lobby_initialized = False
-assigner_sleep_time = 1     # sleep time in seconds between assigner iterations
-unassigned_users = []       # Users with no room assignment
-users_to_notify = []        # Users with assigned URL
-
-# I THINK THE FOLLOWING WILL BE OBSOLETE
-MAX_GROUP_SIZE = 4
-MAX_WAIT_TIME = 180
-
-lobby_url_prefix = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
-generalRequestPrefix = 'https://ope.sailplatform.org/api/v1'
-activityUrlLinkPrefix = '<a href="'
-activityUrlLinkSuffix = '">OPE Session</a>'
-sessionOnlyRequestPath = 'opesessions'
-sessionPlusUsersRequestPath = 'scheduleSession'
-userRequestPath = 'opeusers'
-sessionReadinessPath = 'sessionReadiness'
-roomPrefix = "room"
-nextRoomNum = 2000
-nextThreadNum = 0
 threadMapping = {}
 eventMapping = {}
 # rooms = {}
-moduleSlug = 'ope-learn-practice-p032vbfd'
-namespace = 'default'
-opeBotName = 'bazaar-lti-at-cs-cmu-edu'
-localTimezone = pytz.timezone('America/New_York')
-
-opeBotUsername = 'bazaar-lti-cs-cmu-edu'  # UPDATE THIS ???
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -71,9 +75,9 @@ class Room(lobby_db.Model):
     id = lobby_db.Column(lobby_db.Integer, primary_key=True)
     room_name = lobby_db.Column(lobby_db.String(50))
     activity_url = lobby_db.Column(lobby_db.String(200))
-    module_slug = moduleSlug
-    bot_namespace = namespace
-    bot_name = opeBotName
+    module_slug = MODULE_SLUG
+    bot_namespace = NAMESPACE
+    bot_name = OPE_BOT_NAME
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     num_users = lobby_db.Column(lobby_db.Integer)
     users = lobby_db.relationship('User', back_populates='room')
@@ -92,11 +96,13 @@ class User(lobby_db.Model):
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
+    deletion_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now() +
+                                    timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION))
     room_name = lobby_db.Column(lobby_db.String(50))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
     activity_url = lobby_db.Column(lobby_db.String(200), primary_key=False)
     activity_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
-    ope_namespace = namespace
+    ope_namespace = NAMESPACE
     agent = lobby_db.Column(lobby_db.String(30), primary_key=False)
     thread_name = lobby_db.Column(lobby_db.String(12), primary_key=False)
     event_name = lobby_db.Column(lobby_db.String(12), primary_key=False)
@@ -104,21 +110,12 @@ class User(lobby_db.Model):
 
     def __repr__(self):
         return f'<User {self.user_id}>'
-#
-#
-# class NamedEvent(threading.Event):
-#     def __init__(self, name):
-#         super().__init__()
-#         self.name = name
 
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, lobby_initialized
     print("getJupyterlabUrl: enter", flush=True)
-    # if not lobby_initialized:
-    #     initialize_lobby()
-    #     lobby_initialized = True
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -157,7 +154,7 @@ def getJupyterlabUrl():
                     if user in unassigned_users:
                         unassigned_users.remove(user)
                     user = User(user_id=user_id, name=name, email=email, password=password,
-                                entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
+                                entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                                 activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                     session.add(user)
                     session.commit()
@@ -177,8 +174,11 @@ def getJupyterlabUrl():
             if user is None:
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
                 user = User(user_id=user_id, name=name, email=email, password=password,
-                            entity_id=entity_id, ope_namespace=namespace, module_slug=moduleSlug,
+                            entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name)
+                print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
+                      datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
+                      datetime.fromtimestamp(user.deletion_time.timestamp()))
                 session.add(user)
                 session.commit()
                 session = lobby_db.session
@@ -186,10 +186,6 @@ def getJupyterlabUrl():
         # print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
         # print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
-
-    # with condition:
-    #     print("getJupyterlabUrl: executing 'condition.notify_all()' -- user_id:" + user_id, flush=True)
-    #     condition.notify_all()
 
     # print("getJupyterlabUrl: about to 'event.wait()'", flush=True)
     event.wait()
@@ -204,24 +200,24 @@ def getJupyterlabUrl():
 
 
 def request_session_then_users(room):
-    global generalRequestPrefix, sessionOnlyRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
-    request_url = generalRequestPrefix + "/" + sessionOnlyRequestPath + "/" + namespace + "/" + room.room_name
+    global GENERAL_REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
+    request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + room.room_name
     print("request_session_then_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
         i = 0
         while i < room.num_users:
             user = room.users[i]
-            user_element = {'namespace': namespace, 'name': email_to_dns(user.email)}
+            user_element = {'namespace': NAMESPACE, 'name': email_to_dns(user.email)}
             user_list.append(user_element)
             i += 1
         data = {
             "spec": {
-                "startTime": datetime.now(localTimezone).replace(microsecond=0).isoformat(),
-                "moduleSlug": moduleSlug,
+                "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                "moduleSlug": MODULE_SLUG,
                 "opeBotRef": {
-                    "namespace": namespace,
-                    "name": opeBotName
+                    "namespace": NAMESPACE,
+                    "name": OPE_BOT_NAME
                 },
                 "opeUsersRef": user_list
             }
@@ -240,8 +236,9 @@ def request_session_then_users(room):
 
 
 def request_session_plus_users(room):
-    global generalRequestPrefix, sessionPlusUsersRequestPath, moduleSlug, namespace, opeBotUsername, localTimezone
-    request_url = generalRequestPrefix + "/" + sessionPlusUsersRequestPath
+    global GENERAL_REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
+        LOCAL_TIME_ZONE
+    request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     # print("request_session_plus_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
@@ -255,9 +252,9 @@ def request_session_plus_users(room):
             "sessions": [
                 {
                     "users": user_list,
-                    "moduleSlug": moduleSlug,
+                    "moduleSlug": MODULE_SLUG,
                     "sessionName": room.room_name,
-                    "startTime": datetime.now(localTimezone).replace(microsecond=0).isoformat(),
+                    "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
                 }
             ]
         }
@@ -272,9 +269,10 @@ def request_session_plus_users(room):
 
 
 def request_user(user, room):
-    global userRequestPath, namespace, moduleSlug
+    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG
     with app.app_context():
-        request_url = generalRequestPrefix + "/" + userRequestPath + "/" + namespace + "/" + email_to_dns(user.email)
+        request_url = GENERAL_REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
+                      email_to_dns(user.email)
         print("request_user -- request_url: " + request_url, flush=True)
         data = {
             'enableMatch': False,
@@ -283,10 +281,10 @@ def request_user(user, room):
             'name': user.name,
             'email': user.email,
             'password': user.password,
-            'moduleSlug': moduleSlug,
+            'moduleSlug': MODULE_SLUG,
             'opeSessionRef': [
                 {
-                    'namespace': namespace,
+                    'namespace': NAMESPACE,
                     'name': room.room_name
                 }
             ]
@@ -308,9 +306,9 @@ def request_user(user, room):
 
 
 def request_room_status(room):
-    global generalRequestPrefix, sessionReadinessPath, moduleSlug
+    global GENERAL_REQUEST_PREFIX, SESSION_READINESS_PATH, MODULE_SLUG
     with app.app_context():
-        request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + moduleSlug + \
+        request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
         # print("request_room_status -- request_url: " + request_url, flush=True)
         # with app.app_context():
@@ -330,9 +328,9 @@ def request_room_status(room):
 
 
 def request_room_status_without_module_slug(room):
-    global generalRequestPrefix, sessionReadinessPath, moduleSlug
+    global GENERAL_REQUEST_PREFIX, SESSION_READINESS_PATH
     with app.app_context():
-        request_url = generalRequestPrefix + "/" + sessionReadinessPath + "/" + namespace + "/" + room.room_name
+        request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + room.room_name
         print("request_room_status_without_module_slug -- request_url: " + request_url, flush=True)
         # with app.app_context():
         # data = {
@@ -348,54 +346,6 @@ def request_room_status_without_module_slug(room):
         print("request_room_status_without_module_slug failed -- response code " + str(response.status_code),
               flush=True)
         return None
-#
-#
-# def check_for_new_activity_urls():
-#     global session
-#     with app.app_context():
-#         rooms = Room.query.all()
-#         for room in rooms:
-#             if room.room_name != "waiting_room" and room.activity_url is None:
-#                 wait_time = time.time() - room.start_time.timestamp()
-#                 print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
-#                       flush=True)
-#                 if wait_time >= maxWaitTimeUntilGiveUp:
-#                     prune_room(room)
-#                 else:
-#                     activity_url = request_room_status(room)
-#                     if activity_url is not None:
-#                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-#                               " is " + str(activity_url), flush=True)
-#                         room.activity_url = activity_url
-#                         # assign_users_activity_url(room)
-#                         session.add(room)
-#                         session.commit()
-#                         session = lobby_db.session
-#                         assign_users_activity_url(room)
-#                     else:
-#                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-#                               " is None", flush=True)
-
-
-# def assign_users_activity_url(room):
-#     global session, users_to_notify, threadMapping
-#     with app.app_context():
-#         activity_url = room.activity_url
-#         if activity_url is not None:
-#             users = room.users
-#             # activity_link = activityUrlLinkPrefix + room.activity_url + activityUrlLinkSuffix
-#     for user in users:
-#         with app.app_context():
-#             user.activity_url = activity_url
-#             print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
-#             session.add(user)
-#             session.commit()
-#             session = lobby_db.session
-#             user_thread = threadMapping[user.thread_name]
-#             user_thread.code = 200
-#             user_thread.url = activity_url
-#             user_event = eventMapping[user.event_name]
-#             users_to_notify.append(user_event)
 
 
 def check_for_new_activity_urls():
@@ -407,7 +357,7 @@ def check_for_new_activity_urls():
                 wait_time = time.time() - room.start_time.timestamp()
                 print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
                       flush=True)
-                if wait_time >= maxWaitTimeUntilGiveUp:
+                if wait_time >= MAX_WAIT_TIME_UNTIL_GIVE_UP:
                     prune_room(room)
                 else:
                     activity_url = request_room_status(room)
@@ -478,25 +428,25 @@ def assign_rooms():
     if num_unassigned_users > 0:
 
         # Fill rooms that have less than the target number of users
-        if fillRoomsUnderTarget:
-            assign_rooms_under_n_users(targetUsersPerRoom)
+        if FILL_ROOMS_UNDER_TARGET:
+            assign_rooms_under_n_users(TARGET_USER_PER_ROOM)
 
         # Fill rooms with the target number of users
-        if num_unassigned_users >= targetUsersPerRoom:
-            assign_new_rooms(targetUsersPerRoom)
+        if num_unassigned_users >= TARGET_USER_PER_ROOM:
+            assign_new_rooms(TARGET_USER_PER_ROOM)
 
         # Check for any users waiting long enough that they should get a suboptimal assignment
         users_due_for_suboptimal = get_users_due_for_suboptimal()
         num_users_due_for_suboptimal = len(users_due_for_suboptimal)
 
         # Overfill rooms if there are not enough unassigned users to create a new room
-        if (num_unassigned_users > 0) and overFillRooms:
-            if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) < minUsersPerRoom):
-                assign_rooms_under_n_users(maxUsersPerRoom)
+        if (num_unassigned_users > 0) and OVERFILL_ROOMS:
+            if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) < MIN_USERS_PER_ROOM):
+                assign_rooms_under_n_users(MAX_USERS_PER_ROOM)
 
         # Create a new room, even with less than the target number of users, if there are enough unassigned users
         if num_unassigned_users > 0:
-            if (num_users_due_for_suboptimal > 0) and (num_unassigned_users >= minUsersPerRoom):
+            if (num_users_due_for_suboptimal > 0) and (num_unassigned_users >= MIN_USERS_PER_ROOM):
                 assign_new_room(num_unassigned_users)
 
         prune_users()       # tell users who have been waiting too long to come back later
@@ -506,7 +456,7 @@ def get_users_due_for_suboptimal():
     global unassigned_users
     users_due_for_suboptimal = []
     i = 0
-    if len(unassigned_users) > targetUsersPerRoom:   # Don't assign suboptimally if there are now target num of users
+    if len(unassigned_users) > TARGET_USER_PER_ROOM:   # Don't assign suboptimally if there are now target num of users
         print("get_users_due_for_suboptimal(): now there are enough users for the target", flush=True)
         return users_due_for_suboptimal
     with app.app_context():
@@ -514,7 +464,7 @@ def get_users_due_for_suboptimal():
             user = unassigned_users[i]
             time_diff = time.time() - user.start_time.timestamp()
             print("Time diff for unassignedUser(" + user.user_id + "): " + str(time_diff), flush=True)
-            if time_diff > maxWaitTimeForSubOptimalAssignment:
+            if time_diff > MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT:
                 users_due_for_suboptimal.append(unassigned_users[i])
             i += 1
     return users_due_for_suboptimal
@@ -562,7 +512,7 @@ def get_sorted_available_rooms(max_users):
         current_time = time.time()
         for room in sorted_rooms:
             time_diff = current_time - room.start_time.timestamp()
-            if (time_diff < maxRoomAgeForNewUsers) and (room.room_name != "waiting_room"):
+            if (time_diff < MAX_ROOM_AGE_FOR_NEW_USERS) and (room.room_name != "waiting_room"):
                 if len(room.users) < max_users:
                     room_list.append(room)
         # print("get_sorted_available_rooms:", flush=True)
@@ -585,7 +535,7 @@ def assign_new_room(num_users):
 
     # {This will be replaced by the result of request_session(). }
     nextRoomNum += 1
-    room_name = roomPrefix + str(nextRoomNum)
+    room_name = ROOM_PREFIX + str(nextRoomNum)
     # request_session(room_name, num_users)
     is_room_new = True
 
@@ -617,7 +567,7 @@ def prune_users():
     global unassigned_users, session, threadMapping, users_to_notify
     for user in unassigned_users:
         with app.app_context():
-            if (time.time() - user.start_time.timestamp()) >= maxWaitTimeUntilGiveUp:
+            if (time.time() - user.start_time.timestamp()) >= MAX_WAIT_TIME_UNTIL_GIVE_UP:
                 print("prune_users: user_id: " + user.user_id, flush=True)
                 unassigned_users.remove(user)
                 User.query.filter(User.id == user.id).delete()
@@ -765,7 +715,7 @@ def assigner():
                 # print("assigner -- about to event.set() to notify users", flush=True)
                 event.set()
 
-            time.sleep(assigner_sleep_time)
+            time.sleep(ASSIGNER_SLEEP_TIME)
 
 
 consumer_thread = threading.Thread(target=assigner, daemon=True)
