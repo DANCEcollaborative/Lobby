@@ -43,7 +43,7 @@ sessionPlusUsersRequestPath = 'scheduleSession'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 1000
+nextRoomNum = 2000
 nextThreadNum = 0
 threadMapping = {}
 eventMapping = {}
@@ -167,6 +167,8 @@ def getJupyterlabUrl():
                 if duplicate_user:
                     print("getJupyterlabUrl: user " + str(user_id) + " is a duplicate user", flush=True)
                     user.activity_url_notified = False
+                    user.thread_name = thread_name
+                    user.event_name = event_name
                     session.add(user)
                     session.commit()
                     session = lobby_db.session
@@ -687,17 +689,6 @@ def assigner():
     global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, lobby_initialized
 
     # print("assigner - enter", flush=True)
-
-    # while True:
-    #     print("assigner - enter outer True loop", flush=True)
-    #     with condition:
-    #         print("assigner - about to condition.wait()", flush=True)
-    #         condition.wait()
-    #         print("assigner - completed condition.wait()", flush=True)
-    #         while not user_queue.empty():
-    #             print("assigner - enter test 'while not user_queue.empty()' loop", flush=True)
-    #             current_user, user_id = user_queue.get()
-    #             print("assigner - test loop -- user_id = " + user_id, flush=True)
 
     # Initialize Lobby
     if not lobby_initialized:
