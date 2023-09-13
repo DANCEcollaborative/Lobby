@@ -43,7 +43,7 @@ sessionPlusUsersRequestPath = 'scheduleSession'
 userRequestPath = 'opeusers'
 sessionReadinessPath = 'sessionReadiness'
 roomPrefix = "room"
-nextRoomNum = 220
+nextRoomNum = 230
 nextThreadNum = 0
 threadMapping = {}
 eventMapping = {}
@@ -343,7 +343,55 @@ def request_room_status_without_module_slug(room):
         return response_data
     else:
         print("request_room_status_without_module_slug failed -- response code " + str(response.status_code))
-        return None
+#         return None
+#
+#
+# def check_for_new_activity_urls():
+#     global session
+#     with app.app_context():
+#         rooms = Room.query.all()
+#         for room in rooms:
+#             if room.room_name != "waiting_room" and room.activity_url is None:
+#                 wait_time = time.time() - room.start_time.timestamp()
+#                 print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
+#                       flush=True)
+#                 if wait_time >= maxWaitTimeUntilGiveUp:
+#                     prune_room(room)
+#                 else:
+#                     activity_url = request_room_status(room)
+#                     if activity_url is not None:
+#                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+#                               " is " + str(activity_url))
+#                         room.activity_url = activity_url
+#                         # assign_users_activity_url(room)
+#                         session.add(room)
+#                         session.commit()
+#                         session = lobby_db.session
+#                         assign_users_activity_url(room)
+#                     else:
+#                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+#                               " is None")
+
+
+# def assign_users_activity_url(room):
+#     global session, users_to_notify, threadMapping
+#     with app.app_context():
+#         activity_url = room.activity_url
+#         if activity_url is not None:
+#             users = room.users
+#             # activity_link = activityUrlLinkPrefix + room.activity_url + activityUrlLinkSuffix
+#     for user in users:
+#         with app.app_context():
+#             user.activity_url = activity_url
+#             print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+#             session.add(user)
+#             session.commit()
+#             session = lobby_db.session
+#             user_thread = threadMapping[user.thread_name]
+#             user_thread.code = 200
+#             user_thread.url = activity_url
+#             user_event = eventMapping[user.event_name]
+#             users_to_notify.append(user_event)
 
 
 def check_for_new_activity_urls():
@@ -365,33 +413,33 @@ def check_for_new_activity_urls():
                         room.activity_url = activity_url
                         # assign_users_activity_url(room)
                         session.add(room)
-                        session.commit()
-                        session = lobby_db.session
                         assign_users_activity_url(room)
                     else:
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
                               " is None")
+        session.commit()
+        session = lobby_db.session
 
 
 def assign_users_activity_url(room):
     global session, users_to_notify, threadMapping
-    with app.app_context():
-        activity_url = room.activity_url
-        if activity_url is not None:
-            users = room.users
+    # with app.app_context():
+    activity_url = room.activity_url
+    if activity_url is not None:
+        users = room.users
             # activity_link = activityUrlLinkPrefix + room.activity_url + activityUrlLinkSuffix
     for user in users:
-        with app.app_context():
-            user.activity_url = activity_url
-            print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
-            session.add(user)
-            session.commit()
-            session = lobby_db.session
-            user_thread = threadMapping[user.thread_name]
-            user_thread.code = 200
-            user_thread.url = activity_url
-            user_event = eventMapping[user.event_name]
-            users_to_notify.append(user_event)
+        # with app.app_context():
+        user.activity_url = activity_url
+        print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+        session.add(user)
+        # session.commit()
+        # session = lobby_db.session
+        user_thread = threadMapping[user.thread_name]
+        user_thread.code = 200
+        user_thread.url = activity_url
+        user_event = eventMapping[user.event_name]
+        users_to_notify.append(user_event)
 
 
 def email_to_dns(email):
