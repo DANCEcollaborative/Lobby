@@ -736,6 +736,9 @@ def assigner():
                     if user.activity_url is not None:
                         print("assigner: resending activity_url to user " + str(user_id) +
                               " -- activity_url: " + user.activity_url, flush=True)
+                        user_thread = threadMapping[user.thread_name]
+                        user_thread.code = 200
+                        user_thread.url = user.activity_url
                         user_event = eventMapping[user.event_name]
                         users_to_notify.append(user_event)
 
