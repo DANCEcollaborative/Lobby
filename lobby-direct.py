@@ -9,11 +9,8 @@ import requests
 # from enum import Enum
 from flask import Flask, request
 # from flask import Flask, request, render_template, jsonify
-# from flask import Flask, request, render_template
-# from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
-# from sqlalchemy.orm import sessionmaker
 
 # Queue to pass incoming users
 user_queue = queue.Queue()
@@ -566,10 +563,7 @@ def prune_users():
     for user in unassigned_users:
         with app.app_context():
             if (time.time() - user.start_time.timestamp()) >= maxWaitTimeUntilGiveUp:
-                user_message = str(user.user_id) + \
-                    ": I'm sorry. There are not enough other users logged in right now to start a session. \
-                    Please try again later."
-                print("prune_users: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
+                print("prune_users: user_id: " + user.user_id, flush=True)
                 unassigned_users.remove(user)
                 User.query.filter(User.id == user.id).delete()
                 session.commit()
@@ -586,9 +580,7 @@ def prune_room(room):
     global session, users_to_notify
     with app.app_context():
         for user in room.users:
-            user_message = str(user.name) + \
-                ", I'm sorry. There is no session available right now. Please try again later."
-            print("prune_room: socket_id: " + user.socket_id + "    message: " + user_message, flush=True)
+            print("prune_room -- deleting user " + user.name, flush=True)
             user_thread = threadMapping[user.thread_name]
             user_thread.code = 404
             user_event = eventMapping[user.event_name]
