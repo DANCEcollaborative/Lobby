@@ -157,7 +157,7 @@ def getJupyterlabUrl():
                     session = lobby_db.session
                     if user in unassigned_users:
                         unassigned_users.remove(user)
-                    deletion_time = datetime.now() + ELAPSED_TIME_UNTIL_USER_DELETION
+                    deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
                     user = User(user_id=user_id, name=name, email=email, password=password,
                                 entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                                 activity_url_notified=False, thread_name=thread_name, event_name=event_name,
@@ -182,7 +182,7 @@ def getJupyterlabUrl():
             # New user
             if user is None:
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
-                deletion_time = datetime.now() + ELAPSED_TIME_UNTIL_USER_DELETION
+                deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name,
