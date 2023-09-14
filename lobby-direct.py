@@ -41,7 +41,8 @@ SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
-MODULE_SLUG = 'ope-learn-practice-p032vbfd'
+# MODULE_SLUG = 'ope-learn-practice-p032vbfd'
+MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 
@@ -322,33 +323,23 @@ def request_room_status(room):
     response = requests.get(request_url)
 
     if response.status_code == 200:
-        print("request_room_status succeeded -- response code " + str(response.status_code), flush=True)
+        print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
         response_data = response.text
-        return response_data
+        url_response_code = check_url(response_data)
+        if url_response_code < 300:
+            print("request_room_status check_url response code ok: " + str(url_response_code), flush=True)
+            return response_data
+        else:
+            print("request_room_status check_url response code NOT ok: " + str(url_response_code), flush=True)
+            return None
     else:
         print("request_room_status failed -- response code " + str(response.status_code), flush=True)
         return None
 
 
-def request_room_status_without_module_slug(room):
-    global GENERAL_REQUEST_PREFIX, SESSION_READINESS_PATH
-    with app.app_context():
-        request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + room.room_name
-        print("request_room_status_without_module_slug -- request_url: " + request_url, flush=True)
-        # with app.app_context():
-        # data = {
-        # }
-        # headers = {'Content-Type': 'application/json'}
-        # response = requests.get(request_url, data=json.dumps(data), headers=headers)
-    response = requests.get(request_url)
-
-    if response.status_code == 200:
-        response_data = response.text
-        return response_data
-    else:
-        print("request_room_status_without_module_slug failed -- response code " + str(response.status_code),
-              flush=True)
-        return None
+ def check_url(response_data):
+     url_response = requests.get(response_data)
+     return url_response.status_code
 
 
 def check_for_new_activity_urls():
