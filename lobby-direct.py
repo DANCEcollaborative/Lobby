@@ -337,9 +337,9 @@ def request_room_status(room):
         return None
 
 
- def check_url(response_data):
-     url_response = requests.get(response_data)
-     return url_response.status_code
+def check_url(response_data):
+    url_response = requests.get(response_data)
+    return url_response.status_code
 
 
 def check_for_new_activity_urls():
