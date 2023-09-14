@@ -162,12 +162,12 @@ def getJupyterlabUrl():
                                 entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                                 activity_url_notified=False, thread_name=thread_name, event_name=event_name,
                                 deletion_time=deletion_time)
-                    print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
-                          datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
-                          datetime.fromtimestamp(user.deletion_time.timestamp()))
                     session.add(user)
                     session.commit()
                     session = lobby_db.session
+                    print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
+                          datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
+                          datetime.fromtimestamp(user.deletion_time.timestamp()))
 
                 # If duplicate user, they'll need a URL notification and maybe a room assignment
                 if duplicate_user:
@@ -187,12 +187,12 @@ def getJupyterlabUrl():
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name,
                             deletion_time=deletion_time)
-                print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
-                      datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
-                      datetime.fromtimestamp(user.deletion_time.timestamp()))
                 session.add(user)
                 session.commit()
                 session = lobby_db.session
+                print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
+                      datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
+                      datetime.fromtimestamp(user.deletion_time.timestamp()))
 
         # print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
