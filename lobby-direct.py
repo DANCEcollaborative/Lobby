@@ -20,14 +20,14 @@ FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 60        # seconds    >>> UPDATE THIS <<<
-MAX_WAIT_TIME_UNTIL_GIVE_UP = 180                    # seconds    >>> UPDATE THIS <<<
-MAX_ROOM_AGE_FOR_NEW_USERS = 300                     # seconds    >>> UPDATE THIS <<<
-ASSIGNER_SLEEP_TIME = 1                             # sleep time in seconds between assigner iterations
-ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60           # seconds    >>> UPDATE THIS <<<
-ELAPSED_TIME_UNTIL_ROOM_DELETION = 150 * 60           # seconds    >>> UPDATE THIS <<<
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 60
+MAX_WAIT_TIME_UNTIL_GIVE_UP = 4 * 60
+MAX_ROOM_AGE_FOR_NEW_USERS = 5 * 60
+ASSIGNER_SLEEP_TIME = 1
+ELAPSED_TIME_UNTIL_USER_DELETION = 6 * 60           # seconds    >>> UPDATE THIS <<<
+ELAPSED_TIME_UNTIL_ROOM_DELETION = 7 * 60           # seconds    >>> UPDATE THIS <<<
 CHECK_FOR_USER_DELETION_WAIT_TIME = 1 * 60
-CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60          # seconds    >>> UPDATE THIS <<<
+CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60      
 
 # KUBERNETES- and URL-RELATED CONSTANTS
 OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
