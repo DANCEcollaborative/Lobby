@@ -166,8 +166,8 @@ def getJupyterlabUrl():
                     session.commit()
                     session = lobby_db.session
                     print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
-                          datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
-                          datetime.fromtimestamp(user.deletion_time.timestamp()))
+                          str(datetime.fromtimestamp(user.start_time.timestamp())) + "  --  user.deletion_time: " +
+                          str(datetime.fromtimestamp(user.deletion_time.timestamp())))
 
                 # If duplicate user, they'll need a URL notification and maybe a room assignment
                 if duplicate_user:
@@ -191,8 +191,8 @@ def getJupyterlabUrl():
                 session.commit()
                 session = lobby_db.session
                 print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
-                      datetime.fromtimestamp(user.start_time.timestamp()) + "  --  user.deletion_time: " +
-                      datetime.fromtimestamp(user.deletion_time.timestamp()))
+                      str(datetime.fromtimestamp(user.start_time.timestamp())) + "  --  user.deletion_time: " +
+                      str(datetime.fromtimestamp(user.deletion_time.timestamp())))
 
         # print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
