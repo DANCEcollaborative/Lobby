@@ -605,7 +605,7 @@ def prune_old_rooms():
             rooms = Room.query.all()
             for room in rooms:
                 room_elapsed_time = time.time() - room.start_time.timestamp()
-                if room_elapsed_time >= ELAPSED_TIME_UNTIL_ROOM_DELETION:
+                if (room.room_name != "waiting_room") and (room_elapsed_time >= ELAPSED_TIME_UNTIL_ROOM_DELETION):
                     room_users = room.users
                     if len(room_users) == 0:
                         print("prune_old_rooms: deleting room: " + room.room_name + " after " + str(room_elapsed_time) +
