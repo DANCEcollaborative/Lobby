@@ -1,13 +1,13 @@
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import threading
 import queue
 import json
 import requests
 # from enum import Enum
-from flask import Flask, request
+from flask import Flask, request, make_response
 # from flask import Flask, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -23,10 +23,11 @@ OVERFILL_ROOMS = True
 MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 10        # seconds    >>> UPDATE THIS <<<
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 70                    # seconds    >>> UPDATE THIS <<<
 MAX_ROOM_AGE_FOR_NEW_USERS = 60                     # seconds    >>> UPDATE THIS <<<
-ASSIGNER_SLEEP_TIME = 1     # sleep time in seconds between assigner iterations
-# ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60         # seconds    >>> UPDATE THIS <<<
-ELAPSED_TIME_UNTIL_USER_DELETION = 5 * 60           # seconds    >>> TEMPORARY <<<
-CHECK_FOR_USER_DELETION_WAIT_TIME = 60
+ASSIGNER_SLEEP_TIME = 1                             # sleep time in seconds between assigner iterations
+ELAPSED_TIME_UNTIL_USER_DELETION = 5 * 60           # seconds    >>> UPDATE THIS <<<
+ELAPSED_TIME_UNTIL_ROOM_DELETION = 6 * 60           # seconds    >>> UPDATE THIS <<<
+CHECK_FOR_USER_DELETION_WAIT_TIME = 1 * 60
+CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60          # seconds    >>> UPDATE THIS <<<
 
 # KUBERNETES- and URL-RELATED CONSTANTS
 OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
@@ -45,11 +46,13 @@ NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 
 # GLOBAL VARIABLES
-lobby_initialized = False
-unassigned_users = []       # Users with no room assignment
-users_to_notify = []        # Users with assigned URL
+assigner_initialized = False
 nextRoomNum = 2000
 nextThreadNum = 0
+nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
+nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
+unassigned_users = []       # Users with no room assignment
+users_to_notify = []        # Users with assigned URL
 
 # Threading variables
 user_queue = queue.Queue()
@@ -97,11 +100,6 @@ class User(lobby_db.Model):
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     deletion_time = lobby_db.Column(lobby_db.DateTime(timezone=False))
-    # deletion_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now()
-    #                                 + ELAPSED_TIME_UNTIL_USER_DELETION)
-                                    # timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION))
-    # deletion_time = lobby_db.Column(lobby_db.DateTime(timezone=False),
-    #                                 server_default=text("(now() + interval '300 seconds')")
     room_name = lobby_db.Column(lobby_db.String(50))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
     activity_url = lobby_db.Column(lobby_db.String(200), primary_key=False)
@@ -118,7 +116,7 @@ class User(lobby_db.Model):
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
-    global user_queue, session, nextThreadNum, threadMapping, eventMapping, lobby_initialized
+    global user_queue, session, nextThreadNum, threadMapping, eventMapping
     print("getJupyterlabUrl: enter", flush=True)
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
@@ -157,11 +155,10 @@ def getJupyterlabUrl():
                     session = lobby_db.session
                     if user in unassigned_users:
                         unassigned_users.remove(user)
-                    deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
+                    # deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
                     user = User(user_id=user_id, name=name, email=email, password=password,
                                 entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
-                                activity_url_notified=False, thread_name=thread_name, event_name=event_name,
-                                deletion_time=deletion_time)
+                                activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                     session.add(user)
                     session.commit()
                     session = lobby_db.session
@@ -182,11 +179,10 @@ def getJupyterlabUrl():
             # New user
             if user is None:
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
-                deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
+                # deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
-                            activity_url_notified=False, thread_name=thread_name, event_name=event_name,
-                            deletion_time=deletion_time)
+                            activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                 session.add(user)
                 session.commit()
                 session = lobby_db.session
@@ -207,7 +203,8 @@ def getJupyterlabUrl():
         return current_user.url
     else:
         print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
-        return current_user.code
+        response = make_response('', current_user.code)
+        return response
 
 
 def request_session_then_users(room):
@@ -459,8 +456,7 @@ def assign_rooms():
         if num_unassigned_users > 0:
             if (num_users_due_for_suboptimal > 0) and (num_unassigned_users >= MIN_USERS_PER_ROOM):
                 assign_new_room(num_unassigned_users)
-
-        prune_users()       # tell users who have been waiting too long to come back later
+        prune_users_waiting_too_long()       # tell users who have been waiting too long to come back later
 
 
 def get_users_due_for_suboptimal():
@@ -574,12 +570,12 @@ def assign_room(user, room, is_room_new):
     session = lobby_db.session
 
 
-def prune_users():
+def prune_users_waiting_too_long():
     global unassigned_users, session, threadMapping, users_to_notify
     for user in unassigned_users:
         with app.app_context():
             if (time.time() - user.start_time.timestamp()) >= MAX_WAIT_TIME_UNTIL_GIVE_UP:
-                print("prune_users: user_id: " + user.user_id, flush=True)
+                print("prune_users_waiting_too_long: user_id: " + user.user_id, flush=True)
                 unassigned_users.remove(user)
                 User.query.filter(User.id == user.id).delete()
                 session.commit()
@@ -588,8 +584,41 @@ def prune_users():
                 user_thread.code = 408
                 user_event = eventMapping[user.event_name]
                 users_to_notify.append(user_event)
-
     return unassigned_users
+
+
+def prune_old_users():
+    global session, nextCheckForOldUsers, ELAPSED_TIME_UNTIL_USER_DELETION, CHECK_FOR_USER_DELETION_WAIT_TIME
+    if time.time() >= nextCheckForOldUsers:
+        with app.app_context():
+            users = User.query.all()
+            for user in users:
+                user_elapsed_time = time.time() - user.start_time.timestamp()
+                if user_elapsed_time >= ELAPSED_TIME_UNTIL_USER_DELETION:
+                    print("prune_old_users: deleting user_id: " + user.user_id + " after " + str(user_elapsed_time) +
+                          " seconds", flush=True),
+                    User.query.filter(User.id == user.id).delete()
+            session.commit()
+            session = lobby_db.session
+        nextCheckForOldUsers += CHECK_FOR_USER_DELETION_WAIT_TIME
+
+
+def prune_old_rooms():
+    global session, nextCheckForOldRooms, ELAPSED_TIME_UNTIL_ROOM_DELETION, CHECK_FOR_ROOM_DELETION_WAIT_TIME
+    if time.time() >= nextCheckForOldRooms:
+        with app.app_context():
+            rooms = Room.query.all()
+            for room in rooms:
+                room_elapsed_time = time.time() - room.start_time.timestamp()
+                if room_elapsed_time >= ELAPSED_TIME_UNTIL_ROOM_DELETION:
+                    room_users = room.users
+                    if len(room_users) == 0:
+                        print("prune_old_rooms: deleting room: " + room.room_name + " after " + str(room_elapsed_time) +
+                              " seconds", flush=True),
+                        Room.query.filter(Room.id == room.id).delete()
+            session.commit()
+            session = lobby_db.session
+        nextCheckForOldRooms += CHECK_FOR_ROOM_DELETION_WAIT_TIME
 
 
 def prune_room(room):
@@ -646,13 +675,12 @@ def initialize_lobby():
 
 
 def assigner():
-    # global nextRoomNum, lobby_initialized, session, unassigned_users, users_to_notify, eventMapping
-    global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, lobby_initialized
+    global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, assigner_initialized
 
     # print("assigner - enter", flush=True)
 
     # Initialize Lobby
-    if not lobby_initialized:
+    if not assigner_initialized:
         with app.app_context():
             session = lobby_db.session
             lobby_db.drop_all()
@@ -663,7 +691,7 @@ def assigner():
             session.commit()
             # session = None
             session = lobby_db.session
-            lobby_initialized = True
+            assigner_initialized = True
 
     # Repeat continuously while Lobby is running
     while True:
@@ -726,6 +754,10 @@ def assigner():
                 # print("assigner -- about to event.set() to notify users", flush=True)
                 event.set()
 
+            # Remove old users and rooms from the DB
+            prune_old_users()
+            prune_old_rooms()
+
             time.sleep(ASSIGNER_SLEEP_TIME)
 
 
@@ -734,10 +766,4 @@ consumer_thread.start()
 
 if __name__ == '__main__':
     session = lobby_db.session
-    initialize_lobby()
-    # threading.Thread(target=assigner, daemon=True).start()
-    # user_thread = threading.Thread(target=assigner)
-    # user_thread.daemon = True
-    # user_thread.start()
-    # initialize_lobby()
     app.run(debug=True)
