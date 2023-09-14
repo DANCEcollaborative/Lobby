@@ -13,19 +13,19 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 
 # ROOM ALLOCATION CONSTANTS
-TARGET_USER_PER_ROOM = 4
+TARGET_USERS_PER_ROOM = 4
 MIN_USERS_PER_ROOM = 2
 MAX_USERS_PER_ROOM = 5
 FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 10        # seconds    >>> UPDATE THIS <<<
-MAX_WAIT_TIME_UNTIL_GIVE_UP = 70                    # seconds    >>> UPDATE THIS <<<
-MAX_ROOM_AGE_FOR_NEW_USERS = 60                     # seconds    >>> UPDATE THIS <<<
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 60        # seconds    >>> UPDATE THIS <<<
+MAX_WAIT_TIME_UNTIL_GIVE_UP = 180                    # seconds    >>> UPDATE THIS <<<
+MAX_ROOM_AGE_FOR_NEW_USERS = 300                     # seconds    >>> UPDATE THIS <<<
 ASSIGNER_SLEEP_TIME = 1                             # sleep time in seconds between assigner iterations
-ELAPSED_TIME_UNTIL_USER_DELETION = 5 * 60           # seconds    >>> UPDATE THIS <<<
-ELAPSED_TIME_UNTIL_ROOM_DELETION = 6 * 60           # seconds    >>> UPDATE THIS <<<
+ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60           # seconds    >>> UPDATE THIS <<<
+ELAPSED_TIME_UNTIL_ROOM_DELETION = 150 * 60           # seconds    >>> UPDATE THIS <<<
 CHECK_FOR_USER_DELETION_WAIT_TIME = 1 * 60
 CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60          # seconds    >>> UPDATE THIS <<<
 
@@ -325,6 +325,7 @@ def request_room_status(room):
     if response.status_code == 200:
         print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
         response_data = response.text
+        print("request_room_status -- URL: " + str(response_data), flush=True)
         url_response_code = check_url(response_data)
         if url_response_code < 300:
             print("request_room_status check_url response code ok: " + str(url_response_code), flush=True)
@@ -423,11 +424,11 @@ def assign_rooms():
 
         # Fill rooms that have less than the target number of users
         if FILL_ROOMS_UNDER_TARGET:
-            assign_rooms_under_n_users(TARGET_USER_PER_ROOM)
+            assign_rooms_under_n_users(TARGET_USERS_PER_ROOM)
 
         # Fill rooms with the target number of users
-        if num_unassigned_users >= TARGET_USER_PER_ROOM:
-            assign_new_rooms(TARGET_USER_PER_ROOM)
+        if num_unassigned_users >= TARGET_USERS_PER_ROOM:
+            assign_new_rooms(TARGET_USERS_PER_ROOM)
 
         # Check for any users waiting long enough that they should get a suboptimal assignment
         users_due_for_suboptimal = get_users_due_for_suboptimal()
@@ -449,7 +450,7 @@ def get_users_due_for_suboptimal():
     global unassigned_users
     users_due_for_suboptimal = []
     i = 0
-    if len(unassigned_users) > TARGET_USER_PER_ROOM:   # Don't assign suboptimally if there are now target num of users
+    if len(unassigned_users) > TARGET_USERS_PER_ROOM:   # Don't assign suboptimally if there are now target num of users
         print("get_users_due_for_suboptimal(): now there are enough users for the target", flush=True)
         return users_due_for_suboptimal
     with app.app_context():
