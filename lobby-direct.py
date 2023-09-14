@@ -6,9 +6,7 @@ import threading
 import queue
 import json
 import requests
-# from enum import Enum
 from flask import Flask, request, make_response
-# from flask import Flask, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 
@@ -20,16 +18,16 @@ FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 60
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 1 * 60
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 4 * 60
 MAX_ROOM_AGE_FOR_NEW_USERS = 5 * 60
 ASSIGNER_SLEEP_TIME = 1
 ELAPSED_TIME_UNTIL_USER_DELETION = 6 * 60           # seconds    >>> UPDATE THIS <<<
 ELAPSED_TIME_UNTIL_ROOM_DELETION = 7 * 60           # seconds    >>> UPDATE THIS <<<
 CHECK_FOR_USER_DELETION_WAIT_TIME = 1 * 60
-CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60      
+CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60
 
-# KUBERNETES- and URL-RELATED CONSTANTS
+# KUBERNETES- and HTTP-RELATED CONSTANTS
 OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
 OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
 LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
@@ -45,6 +43,7 @@ SESSION_READINESS_PATH = 'sessionReadiness'
 MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
+TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
@@ -53,7 +52,7 @@ nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
 unassigned_users = []       # Users with no room assignment
-users_to_notify = []        # Users with assigned URL
+users_to_notify = []        # Users either with an assigned URL or who have timed out
 
 # Threading variables
 user_queue = queue.Queue()
@@ -61,7 +60,6 @@ thread_lock = threading.Lock()
 condition = threading.Condition()
 threadMapping = {}
 eventMapping = {}
-# rooms = {}
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -123,7 +121,6 @@ def getJupyterlabUrl():
     thread_name = "thread" + str(nextThreadNum)
     event = threading.Event()
     eventMapping[event_name] = event
-    # user_id = "not set"
     with thread_lock:
         current_user = threading.Thread()
         threadMapping[thread_name] = current_user
@@ -186,7 +183,6 @@ def getJupyterlabUrl():
                 print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
                       str(datetime.fromtimestamp(user.start_time.timestamp())))
 
-        # print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
         # print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
 
@@ -298,15 +294,9 @@ def request_user(user, room):
     response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
     if response.status_code == 200:
-        # response_data = response.json()
-        # result = response_data.get('result')
-        # print("request_user: POST successful", flush=True)
-        # print("request_user, result: " + str(result), flush=True)
         print("request_user: POST succeeded", flush=True)
-        # return str(result)
     else:
         print("request_user: POST failed -- response code " + str(response.status_code), flush=True)
-        # return None
 
 
 def request_room_status(room):
@@ -315,11 +305,6 @@ def request_room_status(room):
         request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
         # print("request_room_status -- request_url: " + request_url, flush=True)
-        # with app.app_context():
-        # data = {
-        # }
-        # headers = {'Content-Type': 'application/json'}
-        # response = requests.get(request_url, data=json.dumps(data), headers=headers)
     response = requests.get(request_url)
 
     if response.status_code == 200:
@@ -360,7 +345,6 @@ def check_for_new_activity_urls():
                         print("check_for_new_activity_urls - activity_url for room " + room.room_name +
                               " is " + str(activity_url), flush=True)
                         room.activity_url = activity_url
-                        # assign_users_activity_url(room)
                         session.add(room)
                         assign_users_activity_url(room)
                     else:
@@ -372,7 +356,6 @@ def check_for_new_activity_urls():
 
 def assign_users_activity_url(room):
     global session, users_to_notify, threadMapping
-    # with app.app_context():
     activity_url = room.activity_url
     if activity_url is not None:
         users = room.users
@@ -380,12 +363,9 @@ def assign_users_activity_url(room):
         print("assign_users_activity_url: activity_url is None -- returning", flush=True)
         return
     for user in users:
-        # with app.app_context():
         user.activity_url = activity_url
         print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
         session.add(user)
-        # session.commit()
-        # session = lobby_db.session
         user_thread = threadMapping[user.thread_name]
         user_thread.code = 200
         user_thread.url = activity_url
@@ -396,7 +376,6 @@ def assign_users_activity_url(room):
 def email_to_dns(email):
     email1 = email.replace('@', '-at-')
     email2 = email1.replace('.', '-')
-    # print("email_to_dns - original: " + email + "  -- dns: " + email2, flush=True)
     return email2
 
 
@@ -481,13 +460,11 @@ def assign_rooms_under_n_users(n_users):
 
 
 def assign_up_to_n_users(room, num_users, is_room_new):
-    # print("assign_up_to_n_users - incoming num_users: " + str(num_users), flush=True)
     global unassigned_users
     while (len(room.users) < num_users) and (len(unassigned_users) > 0):
         user = unassigned_users[0]
         assign_room(user, room, is_room_new)
         unassigned_users.remove(user)
-    # print("assign_up_to_n_users - final room.num_users: " + str(room.num_users), flush=True)
 
 
 # 1. Sort primarily by number of users (ascending), then secondarily by start_time (ascending)
@@ -495,7 +472,6 @@ def assign_up_to_n_users(room, num_users, is_room_new):
 # 2. Select rooms that are not tool old to add new users.
 # 3. Strip waiting_room from results.
 # 4. Strip rooms with >= max_users from the results.
-
 def get_sorted_available_rooms(max_users):
     room_list = []
     with app.app_context():
@@ -527,10 +503,8 @@ def assign_new_rooms(num_users_per_room):
 def assign_new_room(num_users):
     global nextRoomNum, session
 
-    # {This will be replaced by the result of request_session(). }
     nextRoomNum += 1
     room_name = ROOM_PREFIX + str(nextRoomNum)
-    # request_session(room_name, num_users)
     is_room_new = True
 
     with app.app_context():
@@ -551,7 +525,6 @@ def assign_room(user, room, is_room_new):
     room.num_users += 1
     if not is_room_new:
         request_user(user, room)
-        # tell_users_activity_url(room)
     session.add(room)
     session.commit()
     session = lobby_db.session
@@ -568,7 +541,7 @@ def prune_users_waiting_too_long():
                 session.commit()
                 session = lobby_db.session
                 user_thread = threadMapping[user.thread_name]
-                user_thread.code = 408
+                user_thread.code = TIMEOUT_RESPONSE_CODE
                 user_event = eventMapping[user.event_name]
                 users_to_notify.append(user_event)
     return unassigned_users
@@ -614,7 +587,7 @@ def prune_room(room):
         for user in room.users:
             print("prune_room -- deleting user " + user.name, flush=True)
             user_thread = threadMapping[user.thread_name]
-            user_thread.code = 404
+            user_thread.code = TIMEOUT_RESPONSE_CODE
             user_event = eventMapping[user.event_name]
             users_to_notify.append(user_event)
             User.query.filter(User.id == user.id).delete()
@@ -664,8 +637,6 @@ def initialize_lobby():
 def assigner():
     global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, assigner_initialized
 
-    # print("assigner - enter", flush=True)
-
     # Initialize Lobby
     if not assigner_initialized:
         with app.app_context():
@@ -673,26 +644,18 @@ def assigner():
             lobby_db.drop_all()
             lobby_db.create_all()
             waiting_room = Room(room_name="waiting_room", activity_url=None, num_users=0)
-            # print("assigner - Created waiting_room - room_name: " + waiting_room.room_name, flush=True)
             session.add(waiting_room)
             session.commit()
-            # session = None
             session = lobby_db.session
             assigner_initialized = True
 
     # Repeat continuously while Lobby is running
     while True:
-        # print("assigner - enter True loop", flush=True)
         users_to_notify = []        # Clear any previously notified users from list to notify
         with condition:
 
-            # Wait for a user to join
-            # condition.wait()
-
             # Get users in the queue
             while not user_queue.empty():
-                # print("assigner - enter 'while  not user_queue.empty()' loop", flush=True)
-                # current_user, user_id = user_queue.queue[0]
                 current_user, user_id = user_queue.get()
                 with app.app_context():
                     user = User.query.filter_by(user_id=user_id).first()
@@ -720,7 +683,6 @@ def assigner():
 
             # Get current list of unassigned users
             with app.app_context():
-                # print("assigner - getting unassigned_users", flush=True)
                 unassigned_users = User.query.filter_by(room_name="waiting_room").order_by(
                     User.start_time.asc()).all()
 
@@ -733,12 +695,10 @@ def assigner():
                 print_room_assignments()
 
             # Check for new activity URLs as they become available
-            # print("assigner -- calling check_for_new_activity_urls()", flush=True)
             check_for_new_activity_urls()
 
             # Wake up all users in the group with new activity URLs or negative status
             for event in users_to_notify:
-                # print("assigner -- about to event.set() to notify users", flush=True)
                 event.set()
 
             # Remove old users and rooms from the DB
