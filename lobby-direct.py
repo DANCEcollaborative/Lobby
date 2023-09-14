@@ -99,7 +99,6 @@ class User(lobby_db.Model):
     entity_id = lobby_db.Column(lobby_db.String(40), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
-    deletion_time = lobby_db.Column(lobby_db.DateTime(timezone=False))
     room_name = lobby_db.Column(lobby_db.String(50))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
     activity_url = lobby_db.Column(lobby_db.String(200), primary_key=False)
@@ -155,7 +154,6 @@ def getJupyterlabUrl():
                     session = lobby_db.session
                     if user in unassigned_users:
                         unassigned_users.remove(user)
-                    # deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
                     user = User(user_id=user_id, name=name, email=email, password=password,
                                 entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                                 activity_url_notified=False, thread_name=thread_name, event_name=event_name)
@@ -163,8 +161,7 @@ def getJupyterlabUrl():
                     session.commit()
                     session = lobby_db.session
                     print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
-                          str(datetime.fromtimestamp(user.start_time.timestamp())) + "  --  user.deletion_time: " +
-                          str(datetime.fromtimestamp(user.deletion_time.timestamp())))
+                          str(datetime.fromtimestamp(user.start_time.timestamp())))
 
                 # If duplicate user, they'll need a URL notification and maybe a room assignment
                 if duplicate_user:
@@ -179,7 +176,6 @@ def getJupyterlabUrl():
             # New user
             if user is None:
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
-                # deletion_time = datetime.now() + timedelta(seconds=ELAPSED_TIME_UNTIL_USER_DELETION)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name)
@@ -187,8 +183,7 @@ def getJupyterlabUrl():
                 session.commit()
                 session = lobby_db.session
                 print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: " +
-                      str(datetime.fromtimestamp(user.start_time.timestamp())) + "  --  user.deletion_time: " +
-                      str(datetime.fromtimestamp(user.deletion_time.timestamp())))
+                      str(datetime.fromtimestamp(user.start_time.timestamp())))
 
         # print("getJupyterlabUrl: adding to user_queue", flush=True)
         user_queue.put((current_user, user_id))
