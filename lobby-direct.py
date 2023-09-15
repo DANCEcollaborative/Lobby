@@ -127,7 +127,7 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping
-    print("getJupyterlabUrl: enter", flush=True)
+    # print("getJupyterlabUrl: enter", flush=True)
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -424,13 +424,13 @@ def assign_rooms():
         # Check for any users waiting long enough that they should get a suboptimal assignment
         users_due_for_suboptimal = get_users_due_for_suboptimal()
         num_users_due_for_suboptimal = len(users_due_for_suboptimal)
-        print("assign_rooms - num_users_due_for_suboptimal assignment: " + str(num_users_due_for_suboptimal),
-              flush=True)
+        # print("assign_rooms - num_users_due_for_suboptimal assignment: " + str(num_users_due_for_suboptimal),
+        #       flush=True)
 
         # Overfill rooms if there are not enough unassigned users to create a new room
         if (num_unassigned_users > 0) and OVERFILL_ROOMS:
             if (num_users_due_for_suboptimal > 0) and (len(unassigned_users) < MIN_USERS_PER_ROOM):
-                print("assign_rooms - calling assign_rooms_under_n_users", flush=True)
+                # print("assign_rooms - calling assign_rooms_under_n_users", flush=True)
                 assign_rooms_under_n_users(MAX_USERS_PER_ROOM)
 
         # Create a new room, even with less than the target number of users, if there are enough unassigned users
@@ -445,16 +445,16 @@ def get_users_due_for_suboptimal():
     users_due_for_suboptimal = []
     i = 0
     if len(unassigned_users) > TARGET_USERS_PER_ROOM:   # Don't assign suboptimally if there are now target num of users
-        print("get_users_due_for_suboptimal(): now there are enough users for the target", flush=True)
+        # print("get_users_due_for_suboptimal(): now there are enough users for the target", flush=True)
         return users_due_for_suboptimal
     with app.app_context():
         while i < len(unassigned_users):
             user = unassigned_users[i]
             time_diff = time.time() - user.start_time.timestamp()
-            print("Time diff for unassignedUser(" + user.user_id + "): " + str(time_diff), flush=True)
+            # print("Time diff for unassignedUser(" + user.user_id + "): " + str(time_diff), flush=True)
             if time_diff > MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT:
                 users_due_for_suboptimal.append(unassigned_users[i])
-                print("user " + user.user_id + "is due for suboptimal assignment", flush=True)
+                # print("user " + user.user_id + "is due for suboptimal assignment", flush=True)
             i += 1
     return users_due_for_suboptimal
 
@@ -464,19 +464,19 @@ def assign_rooms_under_n_users(n_users):
     #   -- assign to rooms that are most-under n-users first
     #   -- fill one room to n-users before assigning to next room
     global unassigned_users
-    print("assign_rooms_under_n_users - n_users: " + str(n_users), flush=True)
+    # print("assign_rooms_under_n_users - n_users: " + str(n_users), flush=True)
     available_rooms_under_n_users = []
     if len(unassigned_users) > 0:
         available_rooms_under_n_users = get_sorted_available_rooms(n_users)
-        print("assign_rooms_under_n_users - len(available_rooms_under_n_users): " +
-              str(len(available_rooms_under_n_users)), flush=True)
-        print("assign_rooms_under_n_users - len(unassigned_users): " +
-              str(len(unassigned_users)), flush=True)
+        # print("assign_rooms_under_n_users - len(available_rooms_under_n_users): " +
+        #       str(len(available_rooms_under_n_users)), flush=True)
+        # print("assign_rooms_under_n_users - len(unassigned_users): " +
+        #       str(len(unassigned_users)), flush=True)
     i = 0
     is_room_new = False
     with app.app_context():
         while (i < len(available_rooms_under_n_users)) and (len(unassigned_users) > 0):
-            print("assign_rooms_under_n_users - calling assign_up_to_n_users", flush=True)
+            # print("assign_rooms_under_n_users - calling assign_up_to_n_users", flush=True)
             assign_up_to_n_users(available_rooms_under_n_users[i], n_users, is_room_new)
             i += 1
 
@@ -485,7 +485,7 @@ def assign_up_to_n_users(room, num_users, is_room_new):
     global unassigned_users
     while (len(room.users) < num_users) and (len(unassigned_users) > 0):
         user = unassigned_users[0]
-        print("assign_up_to_n_users - calling assign_room", flush=True)
+        # print("assign_up_to_n_users - calling assign_room", flush=True)
         assign_room(user, room, is_room_new)
         unassigned_users.remove(user)
 
@@ -498,22 +498,22 @@ def assign_up_to_n_users(room, num_users, is_room_new):
 def get_sorted_available_rooms(max_users):
     global MAX_ROOM_AGE_FOR_NEW_USERS
     room_list = []
-    print("get_sorted_available_rooms - max_users: " + str(max_users), flush=True)
+    # print("get_sorted_available_rooms - max_users: " + str(max_users), flush=True)
     with app.app_context():
         sorted_rooms = Room.query.order_by(Room.num_users.asc(), Room.start_time.asc()).all()
         for room in sorted_rooms:
             if room.room_name != "waiting_room":
-                print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
+                # print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         current_time = time.time()
         for room in sorted_rooms:
             if room.room_name != "waiting_room":
                 time_diff = current_time - room.start_time.timestamp()
-                print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
-                      str(time_diff), flush=True)
+                # print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
+                #       str(time_diff), flush=True)
                 if time_diff < MAX_ROOM_AGE_FOR_NEW_USERS:
-                    print("get_sorted_available_rooms - time-diff < max room age ", flush=True)
+                    # print("get_sorted_available_rooms - time-diff < max room age ", flush=True)
                     if len(room.users) < max_users:
-                        print("get_sorted_available_rooms -- adding room: " + room.room_name, flush=True)
+                        # print("get_sorted_available_rooms -- adding room: " + room.room_name, flush=True)
                         room_list.append(room)
         # print("get_sorted_available_rooms:", flush=True)
         # if len(room_list) > 0:
@@ -527,8 +527,8 @@ def get_sorted_available_rooms(max_users):
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
     while len(unassigned_users) >= num_users_per_room:
-        print("assign_new_rooms, calling assign_new_room -- len(unassigned_users): " + str(len(unassigned_users)) +
-              " -- num_users_per_room: " + str(num_users_per_room), flush=True)
+        # print("assign_new_rooms, calling assign_new_room -- len(unassigned_users): " + str(len(unassigned_users)) +
+        #       " -- num_users_per_room: " + str(num_users_per_room), flush=True)
         assign_new_room(num_users_per_room)
 
 
@@ -539,7 +539,7 @@ def assign_new_room(num_users):
     room_name = ROOM_PREFIX + str(nextRoomNum)
     is_room_new = True
 
-    print("assign_new_room -- str(num_users): " + str(num_users) + " -- room_name: " + room_name, flush=True)
+    # print("assign_new_room -- str(num_users): " + str(num_users) + " -- room_name: " + room_name, flush=True)
 
     with app.app_context():
         room = Room(room_name=room_name, activity_url=None, num_users=0)
