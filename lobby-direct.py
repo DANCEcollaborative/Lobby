@@ -503,7 +503,7 @@ def get_sorted_available_rooms(max_users):
         sorted_rooms = Room.query.order_by(Room.num_users.asc(), Room.start_time.asc()).all()
         for room in sorted_rooms:
             if room.room_name != "waiting_room":
-                # print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
+                print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         current_time = time.time()
         for room in sorted_rooms:
             if room.room_name != "waiting_room":
