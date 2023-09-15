@@ -7,6 +7,8 @@ services:
       - "5000:5000"
     depends_on:
       - db
+    networks:
+      - lobby-net
   db:
     container_name: lobby_db
     image: postgres:latest
@@ -15,3 +17,8 @@ services:
       POSTGRES_DB: lobby_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: testpwd
+    networks:
+      - lobby-net
+networks:
+  lobby-net:
+    driver: bridge
