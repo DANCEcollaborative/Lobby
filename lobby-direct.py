@@ -21,7 +21,7 @@ OVERFILL_ROOMS = True
 # TIME CONSTANTS -- all in seconds
 MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 4 * 60
-MAX_ROOM_AGE_FOR_NEW_USERS = MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT - 60
+MAX_ROOM_AGE_FOR_NEW_USERS = MAX_WAIT_TIME_UNTIL_GIVE_UP - 60
 ASSIGNER_SLEEP_TIME = 1
 ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60
 ELAPSED_TIME_UNTIL_ROOM_DELETION = 130 * 60
@@ -506,14 +506,15 @@ def get_sorted_available_rooms(max_users):
                 print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         current_time = time.time()
         for room in sorted_rooms:
-            time_diff = current_time - room.start_time.timestamp()
-            print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
-                  str(time_diff), flush=True)
-            if (time_diff < MAX_ROOM_AGE_FOR_NEW_USERS) and (room.room_name != "waiting_room"):
-                print("get_sorted_available_rooms - time-diff < max room age ", flush=True)
-                if len(room.users) < max_users:
-                    print("get_sorted_available_rooms -- adding room: " + room.room_name, flush=True)
-                    room_list.append(room)
+            if room.room_name != "waiting_room":
+                time_diff = current_time - room.start_time.timestamp()
+                print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
+                      str(time_diff), flush=True)
+                if time_diff < MAX_ROOM_AGE_FOR_NEW_USERS:
+                    print("get_sorted_available_rooms - time-diff < max room age ", flush=True)
+                    if len(room.users) < max_users:
+                        print("get_sorted_available_rooms -- adding room: " + room.room_name, flush=True)
+                        room_list.append(room)
         # print("get_sorted_available_rooms:", flush=True)
         # if len(room_list) > 0:
             # for room in room_list:
