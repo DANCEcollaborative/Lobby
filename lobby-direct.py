@@ -409,7 +409,7 @@ def is_duplicate_user(user_info, user):
 
 
 def assign_rooms():
-    global unassigned_users, TARGET_USERS_PER_ROOM
+    global unassigned_users, TARGET_USERS_PER_ROOM, MAX_USERS_PER_ROOM
     num_unassigned_users = len(unassigned_users)
     if num_unassigned_users > 0:
 
@@ -464,6 +464,7 @@ def assign_rooms_under_n_users(n_users):
     #   -- assign to rooms that are most-under n-users first
     #   -- fill one room to n-users before assigning to next room
     global unassigned_users
+    print("assign_rooms_under_n_users - n_users: " + str(n_users), flush=True)
     available_rooms_under_n_users = []
     if len(unassigned_users) > 0:
         available_rooms_under_n_users = get_sorted_available_rooms(n_users)
@@ -495,7 +496,9 @@ def assign_up_to_n_users(room, num_users, is_room_new):
 # 3. Strip waiting_room from results.
 # 4. Strip rooms with >= max_users from the results.
 def get_sorted_available_rooms(max_users):
+    global MAX_ROOM_AGE_FOR_NEW_USERS
     room_list = []
+    print("get_sorted_available_rooms - max_users: " + str(max_users), flush=True)
     with app.app_context():
         sorted_rooms = Room.query.order_by(Room.num_users.asc(), Room.start_time.asc()).all()
         for room in sorted_rooms:
