@@ -297,7 +297,7 @@ def request_user(user, room):
             'opeSessionRef': [
                 {
                     'namespace': NAMESPACE,
-                    'name': room.room_name
+                    'name': MODULE_SLUG + "-" + room.room_name
                 }
             ]
         }
