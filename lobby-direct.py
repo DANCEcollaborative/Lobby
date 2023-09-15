@@ -469,7 +469,7 @@ def assign_rooms_under_n_users(n_users):
     if len(unassigned_users) > 0:
         available_rooms_under_n_users = get_sorted_available_rooms(n_users)
         print("assign_rooms_under_n_users - len(available_rooms_under_n_users): " +
-              str(len( available_rooms_under_n_users)), flush=True)
+              str(len(available_rooms_under_n_users)), flush=True)
         print("assign_rooms_under_n_users - len(unassigned_users): " +
               str(len(unassigned_users)), flush=True)
     i = 0
@@ -507,8 +507,12 @@ def get_sorted_available_rooms(max_users):
         current_time = time.time()
         for room in sorted_rooms:
             time_diff = current_time - room.start_time.timestamp()
+            print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
+                  str(time_diff), flush=True)
             if (time_diff < MAX_ROOM_AGE_FOR_NEW_USERS) and (room.room_name != "waiting_room"):
+                print("get_sorted_available_rooms - time-diff < max room age ", flush=True)
                 if len(room.users) < max_users:
+                    print("get_sorted_available_rooms -- adding room: " + room.room_name, flush=True)
                     room_list.append(room)
         # print("get_sorted_available_rooms:", flush=True)
         # if len(room_list) > 0:
