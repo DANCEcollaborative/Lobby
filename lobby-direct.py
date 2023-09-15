@@ -7,6 +7,7 @@ import queue
 import json
 import requests
 from flask import Flask, request, make_response
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 
@@ -70,6 +71,18 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_EXPIRE_ON_COMMIT'] = False
 lobby_db = SQLAlchemy(app)
 session = None
+
+
+
+cors = CORS(app)
+app.config['CORS_ORIGINS'] = [
+    'https://learn.sailplatform.org',
+    'https://staging.learn.sailplatform.org',
+    'https://qa.learn.sailplatform.org',
+    'https://projects.sailplatform.org',
+    'https://staging.projects.sailplatform.org',
+    'https://qa.projects.sailplatform.org',
+]
 
 
 class Room(lobby_db.Model):
