@@ -553,12 +553,19 @@ def assign_new_room(num_users):
 
 
 def assign_room(user, room, is_room_new):
-    global unassigned_users, session
+    global unassigned_users, session, users_to_notify
     user.room_name = room.room_name
     room.users.append(user)
     room.num_users += 1
     if not is_room_new:
         request_user(user, room)
+        if room.activity_url is not None:
+            user.activity_url = room.activity_url
+            user_thread = threadMapping[user.thread_name]
+            user_thread.code = 200
+            user_thread.url = user.activity_url
+            user_event = eventMapping[user.event_name]
+            users_to_notify.append(user_event)
     session.add(user)
     session.add(room)
     session.commit()
