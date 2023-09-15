@@ -73,7 +73,6 @@ lobby_db = SQLAlchemy(app)
 session = None
 
 
-
 cors = CORS(app)
 app.config['CORS_ORIGINS'] = [
     'https://learn.sailplatform.org',
@@ -410,7 +409,7 @@ def is_duplicate_user(user_info, user):
 
 
 def assign_rooms():
-    global unassigned_users
+    global unassigned_users, TARGET_USERS_PER_ROOM
     num_unassigned_users = len(unassigned_users)
     if num_unassigned_users > 0:
 
@@ -510,6 +509,8 @@ def get_sorted_available_rooms(max_users):
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
     while len(unassigned_users) > num_users_per_room:
+        print("assign_new_rooms, calling assign_new_room -- len(unassigned_users: " + str(len(unassigned_users)) +
+              " -- num_users_per_room: " + str(num_users_per_room), flush=True)
         assign_new_room(num_users_per_room)
 
 
@@ -519,6 +520,8 @@ def assign_new_room(num_users):
     nextRoomNum += 1
     room_name = ROOM_PREFIX + str(nextRoomNum)
     is_room_new = True
+
+    print("assign_new_room -- len(num_users): " + str(len(num_users)) + " -- room_name: " + room_name, flush=True)
 
     with app.app_context():
         room = Room(room_name=room_name, activity_url=None, num_users=0)
