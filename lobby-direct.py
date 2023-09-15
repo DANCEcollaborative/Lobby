@@ -19,7 +19,7 @@ FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 10
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 4 * 60
 MAX_ROOM_AGE_FOR_NEW_USERS = 5 * 60
 ASSIGNER_SLEEP_TIME = 1
@@ -509,7 +509,7 @@ def get_sorted_available_rooms(max_users):
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
     while len(unassigned_users) > num_users_per_room:
-        print("assign_new_rooms, calling assign_new_room -- len(unassigned_users: " + str(len(unassigned_users)) +
+        print("assign_new_rooms, calling assign_new_room -- len(unassigned_users): " + str(len(unassigned_users)) +
               " -- num_users_per_room: " + str(num_users_per_room), flush=True)
         assign_new_room(num_users_per_room)
 
@@ -521,7 +521,7 @@ def assign_new_room(num_users):
     room_name = ROOM_PREFIX + str(nextRoomNum)
     is_room_new = True
 
-    print("assign_new_room -- len(num_users): " + str(len(num_users)) + " -- room_name: " + room_name, flush=True)
+    print("assign_new_room -- str(num_users): " + str(num_users) + " -- room_name: " + room_name, flush=True)
 
     with app.app_context():
         room = Room(room_name=room_name, activity_url=None, num_users=0)
