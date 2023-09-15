@@ -19,12 +19,12 @@ FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 10
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 4 * 60
-MAX_ROOM_AGE_FOR_NEW_USERS = 5 * 60
+MAX_ROOM_AGE_FOR_NEW_USERS = MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT - 60
 ASSIGNER_SLEEP_TIME = 1
-ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60           # >>> UPDATE THIS <<<
-ELAPSED_TIME_UNTIL_ROOM_DELETION = 130 * 60           # >>> UPDATE THIS <<<
+ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60
+ELAPSED_TIME_UNTIL_ROOM_DELETION = 130 * 60
 CHECK_FOR_USER_DELETION_WAIT_TIME = 1 * 60
 CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60
 
@@ -508,7 +508,7 @@ def get_sorted_available_rooms(max_users):
 
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
-    while len(unassigned_users) > num_users_per_room:
+    while len(unassigned_users) >= num_users_per_room:
         print("assign_new_rooms, calling assign_new_room -- len(unassigned_users): " + str(len(unassigned_users)) +
               " -- num_users_per_room: " + str(num_users_per_room), flush=True)
         assign_new_room(num_users_per_room)
