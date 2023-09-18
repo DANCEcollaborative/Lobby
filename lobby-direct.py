@@ -251,7 +251,7 @@ def request_session_plus_users(room):
     global GENERAL_REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
         LOCAL_TIME_ZONE
     request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
-    # print("request_session_plus_users -- request_url: " + request_url, flush=True)
+    print("request_session_plus_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
         i = 0
@@ -297,7 +297,8 @@ def request_user(user, room):
             'opeSessionRef': [
                 {
                     'namespace': NAMESPACE,
-                    'name': MODULE_SLUG + "-" + room.room_name
+                    # 'name': MODULE_SLUG + "-" + room.room_name
+                    'name': room.room_name
                 }
             ]
         }
