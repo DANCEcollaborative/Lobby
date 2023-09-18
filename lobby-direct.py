@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 4600
+nextRoomNum = 4800
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -93,6 +93,7 @@ class Room(lobby_db.Model):
     bot_namespace = NAMESPACE
     bot_name = OPE_BOT_NAME
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
+    start_time_string = lobby_db.Column(lobby_db.String(20), nullable=False)
     num_users = lobby_db.Column(lobby_db.Integer)
     users = lobby_db.relationship('User', back_populates='room')
 
@@ -229,7 +230,9 @@ def request_session_update_users(room):
             "spec": {
                 # "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
                 # "startTime": room.start_time,
-                "startTime": room.start_time.replace(microsecond=0).isoformat() + '-04:00',
+                # "startTime": room.start_time.replace(microsecond=0).isoformat() + '-04:00',
+                # "startTime": datetime(room.start_time(LOCAL_TIME_ZONE)).replace(microsecond=0).isoformat(),
+                "startTime": room.start_time_string,
                 "moduleSlug": MODULE_SLUG,
                 "opeBotRef": {
                     "namespace": NAMESPACE,
@@ -263,7 +266,7 @@ def request_session_plus_users(room):
     request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
     start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
-    room.start_time = start_time
+    room.start_time_string = start_time
     with app.app_context():
         user_list = []
         i = 0
