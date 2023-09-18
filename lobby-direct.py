@@ -93,7 +93,7 @@ class Room(lobby_db.Model):
     bot_namespace = NAMESPACE
     bot_name = OPE_BOT_NAME
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
-    start_time_string = lobby_db.Column(lobby_db.String(20), nullable=False)
+    start_time_string = lobby_db.Column(lobby_db.String(30))
     num_users = lobby_db.Column(lobby_db.Integer)
     users = lobby_db.relationship('User', back_populates='room')
 
