@@ -226,7 +226,8 @@ def request_session_update_users(room):
         data = {
             "spec": {
                 # "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
-                "startTime": room.start_time,
+                # "startTime": room.start_time,
+                "startTime": room.start_time.replace(microsecond=0).isoformat(),
                 "moduleSlug": MODULE_SLUG,
                 "opeBotRef": {
                     "namespace": NAMESPACE,
