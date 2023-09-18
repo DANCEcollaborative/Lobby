@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 4002
+nextRoomNum = 4200
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -211,10 +211,10 @@ def getJupyterlabUrl():
         return response
 
 
-def request_session_then_users(room):
+def request_session_update_users(room):
     global GENERAL_REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
     request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + room.room_name
-    print("request_session_then_users -- request_url: " + request_url, flush=True)
+    print("request_session_update_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         user_list = []
         i = 0
@@ -234,17 +234,23 @@ def request_session_then_users(room):
                 "opeUsersRef": user_list
             }
         }
-    print("request_session_then_users -- data as string: " + str(data), flush=True)
+    print("request_session_update_users -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
-    response = requests.post(request_url, data=json.dumps(data), headers=headers)
+    response = requests.put(request_url, data=json.dumps(data), headers=headers)
 
     if response.status_code == 200:
-        print("request_session_then_users: POST successful", flush=True)
-        with app.app_context():
-            for user in room.users:
-                request_user(user, room)
+        print("request_session_update_users: POST successful", flush=True)
     else:
-        print("request_session_then_users: POST failed -- response code " + str(response.status_code), flush=True)
+        print("request_session_update_users: POST failed -- response code " + str(response.status_code))
+
+    #
+    # if response.status_code == 200:
+    #     print("request_session_update_users: POST successful", flush=True)
+    #     with app.app_context():
+    #         for user in room.users:
+    #             request_user(user, room)
+    # else:
+    #     print("request_session_update_users: POST failed -- response code " + str(response.status_code), flush=True)
 
 
 def request_session_plus_users(room):
@@ -567,6 +573,7 @@ def assign_room(user, room, is_room_new):
             user_thread.url = user.activity_url
             user_event = eventMapping[user.event_name]
             users_to_notify.append(user_event)
+        request_session_update_users(room)
     session.add(user)
     session.add(room)
     session.commit()
