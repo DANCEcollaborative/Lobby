@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 4200
+nextRoomNum = 4210
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -225,7 +225,8 @@ def request_session_update_users(room):
             i += 1
         data = {
             "spec": {
-                "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                # "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                "startTime": room.start_time,
                 "moduleSlug": MODULE_SLUG,
                 "opeBotRef": {
                     "namespace": NAMESPACE,
@@ -258,6 +259,8 @@ def request_session_plus_users(room):
         LOCAL_TIME_ZONE
     request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
+    start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
+    room.start_time = start_time
     with app.app_context():
         user_list = []
         i = 0
@@ -272,7 +275,8 @@ def request_session_plus_users(room):
                     "users": user_list,
                     "moduleSlug": MODULE_SLUG,
                     "sessionName": room.room_name,
-                    "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                    # "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                    "startTime": start_time,
                 }
             ]
         }
