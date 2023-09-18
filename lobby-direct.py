@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 2000
+nextRoomNum = 3000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -451,7 +451,7 @@ def get_users_due_for_suboptimal():
         while i < len(unassigned_users):
             user = unassigned_users[i]
             time_diff = time.time() - user.start_time.timestamp()
-            # print("Time diff for unassignedUser(" + user.user_id + "): " + str(time_diff), flush=True)
+            print("Time diff for unassignedUser(" + user.user_id + "): " + str(time_diff), flush=True)
             if time_diff > MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT:
                 users_due_for_suboptimal.append(unassigned_users[i])
                 # print("user " + user.user_id + "is due for suboptimal assignment", flush=True)
