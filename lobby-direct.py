@@ -303,7 +303,7 @@ def request_user(user, room):
                       email_to_dns(user.email)
         print("request_user -- request_url: " + request_url, flush=True)
         data = {
-            "spec": {
+            'spec': {
                 'enableMatch': False,
                 'isBot': False,
                 'stressTest': False,
@@ -311,13 +311,18 @@ def request_user(user, room):
                 'email': user.email,
                 'password': user.password,
                 'moduleSlug': MODULE_SLUG,
-                'opeSessionRef': [
-                    {
-                        'namespace': NAMESPACE,
-                        'name': MODULE_SLUG + "-" + room.room_name
-                        # 'name': room.room_name
-                    }
-                ]
+                'opeSessionRef': {
+                    'namespace': NAMESPACE,
+                    'name': MODULE_SLUG + "-" + room.room_name
+                    # 'name': room.room_name
+                }
+                # 'opeSessionRef': [
+                #     {
+                #         'namespace': NAMESPACE,
+                #         'name': MODULE_SLUG + "-" + room.room_name
+                #         # 'name': room.room_name
+                #     }
+                # ]
             }
         }
     print("request_user -- data as string: " + str(data), flush=True)
