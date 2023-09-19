@@ -212,6 +212,14 @@ def getJupyterlabUrl():
         return response
 
 
+@app.route('/lobbyRoomNum/<room_num>', methods=['PUT'])
+def lobbyRoomNum(room_num):
+    global nextRoomNum
+    print("lobbyRoomNum: room_num = " + room_num, flush=True)
+    nextRoomNum = room_num
+    return "OK", 200
+
+
 def request_session_update_users(room):
     global GENERAL_REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
     # print("request_session_update_users -- request_url: " + request_url, flush=True)
