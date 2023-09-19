@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 4900
+nextRoomNum = 4950
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -303,20 +303,22 @@ def request_user(user, room):
                       email_to_dns(user.email)
         print("request_user -- request_url: " + request_url, flush=True)
         data = {
-            'enableMatch': False,
-            'isBot': False,
-            'stressTest': False,
-            'name': user.name,
-            'email': user.email,
-            'password': user.password,
-            'moduleSlug': MODULE_SLUG,
-            'opeSessionRef': [
-                {
-                    'namespace': NAMESPACE,
-                    'name': MODULE_SLUG + "-" + room.room_name
-                    # 'name': room.room_name
-                }
-            ]
+            "spec": {
+                'enableMatch': False,
+                'isBot': False,
+                'stressTest': False,
+                'name': user.name,
+                'email': user.email,
+                'password': user.password,
+                'moduleSlug': MODULE_SLUG,
+                'opeSessionRef': [
+                    {
+                        'namespace': NAMESPACE,
+                        'name': MODULE_SLUG + "-" + room.room_name
+                        # 'name': room.room_name
+                    }
+                ]
+            }
         }
     print("request_user -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
