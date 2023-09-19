@@ -216,7 +216,7 @@ def getJupyterlabUrl():
 def lobbyRoomNum(room_num):
     global nextRoomNum
     print("lobbyRoomNum: room_num = " + room_num, flush=True)
-    nextRoomNum = room_num
+    nextRoomNum = int(room_num)
     return "OK", 200
 
 
