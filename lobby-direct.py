@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 8000
+nextRoomNum = 1500
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -218,6 +218,26 @@ def lobbyRoomNum(room_num):
     print("lobbyRoomNum: room_num = " + room_num, flush=True)
     nextRoomNum = room_num
     return "OK", 200
+
+
+@app.route('/lobbyDeleteRoom/<room_name>', methods=['PUT'])
+def lobbyDeleteRoom(room_name):
+    print("lobbyDeleteRoom: room_name = " + room_name, flush=True)
+    delete_result = delete_room(room_name)
+    if delete_result is not None:
+        return "OK", 200
+    else:
+        return "Room " + room_name + " not found", 404
+
+
+@app.route('/lobbyDeleteUser/<user_id>', methods=['PUT'])
+def lobbyDeleteUser(user_id):
+    print("lobbyDeleteUser: user_name = " + user_email_dns, flush=True)
+    delete_result = delete_user(user_id)
+    if delete_result is not None:
+        return "OK", 200
+    else:
+        return "User " + user_id + " not found", 404
 
 
 def request_session_update_users(room):
@@ -676,6 +696,40 @@ def prune_room(room):
         Room.query.filter(Room.id == room.id).delete()
         session.commit()
         session = lobby_db.session
+
+
+# This is used by the endpoint /lobbyDeleteRoom. It differs from 'prune_room() in two respects:
+# -- No user needs to be notified.
+# -- The input parameter is a room name rather than a room entry in the database.
+def delete_room(room_name):
+    global session, users_to_notify
+    with app.app_context():
+        room = Room.query.filter_by(room_name=room_name).first()
+        if room is not None:
+            for user in room.users:
+                print("delete_room -- deleting user " + user.name, flush=True)
+                User.query.filter(User.id == user.id).delete()
+                session.commit()
+                session = lobby_db.session
+            Room.query.filter(Room.id == room.id).delete()
+            session.commit()
+            session = lobby_db.session
+            return room_name
+        else:
+            return None
+
+
+def delete_user(user_id):
+    global session
+    with app.app_context():
+        user = User.query.filter_by(user_id=user_id).first()
+        if user is not None:
+            User.query.filter(User.id == user.id).delete()
+            session.commit()
+            session = lobby_db.session
+            return user_id
+        else:
+            return None
 
 
 def print_room_assignments():
