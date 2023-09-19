@@ -232,7 +232,7 @@ def lobbyDeleteRoom(room_name):
 
 @app.route('/lobbyDeleteUser/<user_id>', methods=['PUT'])
 def lobbyDeleteUser(user_id):
-    print("lobbyDeleteUser: user_name = " + user_email_dns, flush=True)
+    print("lobbyDeleteUser: user_name = " + user_id, flush=True)
     delete_result = delete_user(user_id)
     if delete_result is not None:
         return "OK", 200
