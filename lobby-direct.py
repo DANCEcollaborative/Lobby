@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 4950
+nextRoomNum = 5000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -262,13 +262,17 @@ def request_session_update_users(room):
 
 def request_session_plus_users(room):
     global GENERAL_REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
-        LOCAL_TIME_ZONE
+        LOCAL_TIME_ZONE, session
     request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
     start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
     room.start_time_string = start_time
     with app.app_context():
         user_list = []
+        room.start_time_string = start_time
+        session.add(room)
+        session.commit()
+        session = lobby_db.session
         i = 0
         while i < room.num_users:
             user = room.users[i]
