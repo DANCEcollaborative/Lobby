@@ -228,11 +228,11 @@ def request_session_update_users(room):
             i += 1
         data = {
             "spec": {
-                # "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
                 # "startTime": room.start_time,
                 # "startTime": room.start_time.replace(microsecond=0).isoformat() + '-04:00',
                 # "startTime": datetime(room.start_time(LOCAL_TIME_ZONE)).replace(microsecond=0).isoformat(),
-                "startTime": room.start_time_string,
+                # "startTime": room.start_time_string,
                 "moduleSlug": MODULE_SLUG,
                 "sessionName": MODULE_SLUG + "-" + room.room_name,
                 "opeBotRef": {
@@ -267,12 +267,12 @@ def request_session_plus_users(room):
     request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
     start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
-    room.start_time_string = start_time
+    # room.start_time_string = start_time
     with app.app_context():
         user_list = []
-        room.start_time_string = start_time
-        session.add(room)
-        session.commit()
+        # room.start_time_string = start_time
+        # session.add(room)
+        # session.commit()
         session = lobby_db.session
         i = 0
         while i < room.num_users:
