@@ -21,7 +21,7 @@ OVERFILL_ROOMS = True
 # TIME CONSTANTS -- all in seconds
 MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 5 * 60
-MAX_ROOM_AGE_FOR_NEW_USERS = MAX_WAIT_TIME_UNTIL_GIVE_UP - 60
+MAX_ROOM_AGE_FOR_NEW_USERS = 10 * 60
 ASSIGNER_SLEEP_TIME = 1
 ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60
 ELAPSED_TIME_UNTIL_ROOM_DELETION = 130 * 60
@@ -48,7 +48,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 2000
+nextRoomNum = 7758
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -592,9 +592,9 @@ def assign_new_rooms(num_users_per_room):
 def assign_new_room(num_users):
     global nextRoomNum, session
 
-    nextRoomNum += 1
     room_name = ROOM_PREFIX + str(nextRoomNum)
     is_room_new = True
+    nextRoomNum += 1
 
     # print("assign_new_room -- str(num_users): " + str(num_users) + " -- room_name: " + room_name, flush=True)
 
@@ -769,7 +769,7 @@ def initialize_lobby():
 
 
 def assigner():
-    global nextRoomNum, session, unassigned_users, users_to_notify, eventMapping, user_queue, assigner_initialized
+    global session, unassigned_users, users_to_notify, eventMapping, user_queue, assigner_initialized
 
     # Initialize Lobby
     if not assigner_initialized:
