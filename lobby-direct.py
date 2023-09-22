@@ -220,6 +220,54 @@ def lobbyRoomNum(room_num):
     return "OK", 200
 
 
+@app.route('/lobbyTargetUsers/<target_users>', methods=['PUT'])
+def lobbyTargetUsers(target_users):
+    global TARGET_USERS_PER_ROOM
+    print("lobbyTargetUsers: target_users = " + target_users, flush=True)
+    TARGET_USERS_PER_ROOM = int(target_users)
+    return "OK", 200
+
+
+@app.route('/lobbyMinUsers/<min_users>', methods=['PUT'])
+def lobbyMinUsers(min_users):
+    global MIN_USERS_PER_ROOM
+    print("lobbyMinUsers: min_users = " + min_users, flush=True)
+    MIN_USERS_PER_ROOM = int(min_users)
+    return "OK", 200
+
+
+@app.route('/lobbyMaxUsers/<max_users>', methods=['PUT'])
+def lobbyMaxUsers(max_users):
+    global MAX_USERS_PER_ROOM
+    print("lobbyMaxUsers: max_users = " + max_users, flush=True)
+    MAX_USERS_PER_ROOM = int(max_users)
+    return "OK", 200
+
+
+@app.route('/lobbyMaxRoomAge/<max_age>', methods=['PUT'])
+def lobbyMaxRoomAge(max_age):
+    global MAX_ROOM_AGE_FOR_NEW_USERS
+    print("lobbyMaxRoomAge: max_age = " + max_age, flush=True)
+    MAX_ROOM_AGE_FOR_NEW_USERS = int(max_age)
+    return "OK", 200
+
+
+@app.route('/lobbyMaxGiveUp/<max_give_up>', methods=['PUT'])
+def lobbyMaxGiveUp(max_give_up):
+    global MAX_WAIT_TIME_UNTIL_GIVE_UP
+    print("lobbyMaxGiveUp: max_give_up = " + max_give_up, flush=True)
+    MAX_WAIT_TIME_UNTIL_GIVE_UP = int(max_give_up)
+    return "OK", 200
+
+
+@app.route('/lobbyMaxSubAssign/<max_sub_assign>', methods=['PUT'])
+def lobbyMaxSubAssign(max_sub_assign):
+    global MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT
+    print("lobbyMaxSubAssign: max_sub_assign = " + max_sub_assign, flush=True)
+    MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = int(max_sub_assign)
+    return "OK", 200
+
+
 @app.route('/lobbyDeleteRoom/<room_name>', methods=['PUT'])
 def lobbyDeleteRoom(room_name):
     print("lobbyDeleteRoom: room_name = " + room_name, flush=True)
