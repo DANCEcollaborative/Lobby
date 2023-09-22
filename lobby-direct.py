@@ -268,6 +268,14 @@ def lobbyMaxSubAssign(max_sub_assign):
     return "OK", 200
 
 
+@app.route('/lobbyModuleSlug/<module_slug>', methods=['PUT'])
+def lobbyModuleSlug(module_slug):
+    global MODULE_SLUG
+    print("lobbyModuleSlug: module_slug = " + module_slug, flush=True)
+    MODULE_SLUG = module_slug
+    return "OK", 200
+
+
 @app.route('/lobbyDeleteRoom/<room_name>', methods=['PUT'])
 def lobbyDeleteRoom(room_name):
     print("lobbyDeleteRoom: room_name = " + room_name, flush=True)
