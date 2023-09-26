@@ -41,14 +41,15 @@ SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
 # MODULE_SLUG = 'ope-learn-practice-p032vbfd'
-MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
+# MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
+MODULE_SLUG = 'ope-author-domain-ana-mnuf5kh7'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 7801
+nextRoomNum = 9000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
