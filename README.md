@@ -23,8 +23,3 @@ Configuration parameters are all currently located near the top of file **lobby.
 - Navigate to the top level of the downloaded repo.
 - Enter the following command:
   - docker compose up --build -d
-- In a browser, open multiple tabs/windows and navigate to
-  - http:<MACHINE_ADDRESS>:5000/login/<USER_NAME>
-  - where
-    - <MACHINE_ADDRESS> is an address for the machine that Lobby is running on -- either a domain name (e.g., localhost) or an IP address of the localhost (e.g., 127.0.0.1) or an external host.
-    - <USER_NAME> is a unique name for each tab or window.
