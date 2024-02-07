@@ -6,15 +6,12 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     networks:
       - lobby-net
   db:
     container_name: lobby_db
     image: postgres:latest
-    healthcheck:
-      test: ["CMD", "pg_isready", "-q"]
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_DB: lobby_db
