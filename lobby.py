@@ -85,7 +85,7 @@ class Room(lobby_db.Model):
 class User(lobby_db.Model):
     __tablename__ = 'user'
     id = lobby_db.Column(lobby_db.Integer, primary_key=True)
-    user_id = lobby_db.Column(lobby_db.String(30), nullable=False)
+    user_id = lobby_db.Column(lobby_db.String(80), nullable=False)
     name = lobby_db.Column(lobby_db.String(50), primary_key=False)
     email = lobby_db.Column(lobby_db.String(80), primary_key=False)
     password = lobby_db.Column(lobby_db.String(100), primary_key=False)
