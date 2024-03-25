@@ -13,13 +13,13 @@ from sqlalchemy.sql import func
 
 # ROOM ALLOCATION CONSTANTS
 TARGET_USERS_PER_ROOM = 3
-MIN_USERS_PER_ROOM = 1
+MIN_USERS_PER_ROOM = 2
 MAX_USERS_PER_ROOM = 3
 FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 10
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 5 * 60
 MAX_ROOM_AGE_FOR_NEW_USERS = 10 * 60
 ASSIGNER_SLEEP_TIME = 1
@@ -43,14 +43,14 @@ SESSION_READINESS_PATH = 'sessionReadiness'
 # MODULE_SLUG = 'ope-learn-practice-p032vbfd'
 # MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
 # MODULE_SLUG = 'ope-author-domain-ana-mnuf5kh7'
-MODULE_SLUG = 'ope-learn-domain-ana-ucm5hl6q'
+MODULE_SLUG = 'ope-learn-autoscalin-mpfs4jua'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 9000
+nextRoomNum = 11000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
