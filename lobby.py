@@ -89,7 +89,7 @@ app.config['CORS_ORIGINS'] = [
 class Room(lobby_db.Model):
     __tablename__ = 'room'
     id = lobby_db.Column(lobby_db.Integer, primary_key=True)
-    room_name = lobby_db.Column(lobby_db.varchar(80))
+    room_name = lobby_db.Column(lobby_db.VARCHAR(80))
     activity_url = lobby_db.Column(lobby_db.String(200))
     module_slug = MODULE_SLUG
     bot_namespace = NAMESPACE
@@ -106,21 +106,21 @@ class Room(lobby_db.Model):
 class User(lobby_db.Model):
     __tablename__ = 'user'
     id = lobby_db.Column(lobby_db.Integer, primary_key=True)
-    user_id = lobby_db.Column(lobby_db.varchar(80), nullable=False)
-    name = lobby_db.Column(lobby_db.varchar(80), primary_key=False)
-    email = lobby_db.Column(lobby_db.varchar(80), primary_key=False)
+    user_id = lobby_db.Column(lobby_db.VARCHAR(80), nullable=False)
+    name = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
+    email = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
     password = lobby_db.Column(lobby_db.String(100), primary_key=False)
-    entity_id = lobby_db.Column(lobby_db.varchar(80), primary_key=False)
+    entity_id = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
-    room_name = lobby_db.Column(lobby_db.varchar(80))
+    room_name = lobby_db.Column(lobby_db.VARCHAR(80))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
     activity_url = lobby_db.Column(lobby_db.String(200), primary_key=False)
     activity_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
     ope_namespace = NAMESPACE
-    agent = lobby_db.Column(lobby_db.varchar(80), primary_key=False)
-    thread_name = lobby_db.Column(lobby_db.varchar(80), primary_key=False)
-    event_name = lobby_db.Column(lobby_db.varchar(80), primary_key=False)
+    agent = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
+    thread_name = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
+    event_name = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
     room = lobby_db.relationship('Room', back_populates='users')
 
     def __repr__(self):
