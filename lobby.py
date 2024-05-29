@@ -43,14 +43,15 @@ SESSION_READINESS_PATH = 'sessionReadiness'
 # MODULE_SLUG = 'ope-learn-practice-p032vbfd'
 # MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
 # MODULE_SLUG = 'ope-author-domain-ana-mnuf5kh7'
-MODULE_SLUG = 'ope-learn-autoscalin-mpfs4jua'
+# MODULE_SLUG = 'ope-learn-autoscalin-mpfs4jua'
+MODULE_SLUG = 'ope-learn-practice-cfhlsd5z'     # Summer 2024 FCDS, "Pittsburgh" students (not certificate)
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 11000
+nextRoomNum = 14000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
