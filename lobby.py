@@ -6,7 +6,7 @@ import threading
 import queue
 import json
 import requests
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, render_template
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -128,6 +128,24 @@ class User(lobby_db.Model):
     def __repr__(self):
         return f'<User {self.user_id}>'
 
+# This /login step is TEMPORARY to use a single HTML page to SIMULATE receive logins from multiple users.
+#     1. TEMPORARY step: Receive user_id from the request URL and send it back to the HTML page so the page can send a
+#        unique user_id with each request. In browsers, each http://<SERVER>/login/<user_id> URL will have a unique
+#        user_id value.
+#     2. PERMANENT step: Receive user data in a user_connect request. For simulation testing, all the user data except
+#        the user_id is a constant. For real world use, the "Launch OPE" button will send each data element customized
+#        for the user.
+#           -- Data:
+#                   a. user_id (unique, as received from temporary step 1)
+#                   b. name
+#                   c. email
+#                   d. password
+#                   e. entityId
+#                   f. Bazaar agent (I added this data requirement)
+@app.route('/login/<user_id>', methods=['GET', 'POST'])
+def login_get(user_id):
+    print("Login: received user_id " + str(user_id), flush=True)
+    return render_template('lobby.html', user_id=user_id)
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
