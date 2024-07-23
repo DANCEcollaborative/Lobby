@@ -32,7 +32,7 @@ CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60
 OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
 OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
 LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
-LOBBY_URL_PREFIX = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
+LOBBY_URL_PREFIX = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 GENERAL_REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
 ACTIVITY_URL_LINK_PREFIX = '<a href="'
 ACTIVITY_URL_LINK_SUFFIX = '">OPE Session</a>'
