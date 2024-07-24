@@ -284,6 +284,7 @@ def sail_lobby_connect(user_data):
     # global user_queue
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, IS_DIRECT_ASSIGNMENT
     print("sail_lobby_connect: enter", flush=True)
+    emit('response_event', "Data received successfully")
     IS_DIRECT_ASSIGNMENT = True
     socket_id = request.sid
     info_type = InfoType.socketInfo
@@ -366,13 +367,14 @@ def sail_lobby_connect(user_data):
         user_queue.put((current_user, user_id))
         # print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
 
-    # print("sail_lobby_connect: about to 'event.wait()'", flush=True)
+    print("sail_lobby_connect: about to 'event.wait()'", flush=True)
     event.wait()
-    # print("sail_lobby_connect: returned from 'event.wait()'", flush=True)
+    print("sail_lobby_connect: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
         print("sail_lobby_connect: code 200; returning URL: " + current_user.url, flush=True)
-        return current_user.url
+        # return current_user.url
+        emit('update_event', current_user.url)
     else:
         print("sail_lobby_connect: returning negative code: " + str(current_user.code), flush=True)
         response = make_response('', current_user.code)
@@ -679,26 +681,46 @@ def check_url(response_data):
 
 def check_for_new_activity_urls():
     global session
+    print("enter check_for_new_activity_urls",flush=True)
     with app.app_context():
         rooms = Room.query.all()
         for room in rooms:
-            if room.room_name != "waiting_room" and room.activity_url is None:
-                wait_time = time.time() - room.start_time.timestamp()
-                print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
-                      flush=True)
-                if wait_time >= MAX_WAIT_TIME_UNTIL_GIVE_UP:
-                    prune_room(room)
-                else:
-                    activity_url = request_room_status(room)
-                    if activity_url is not None:
-                        print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                              " is " + str(activity_url), flush=True)
-                        room.activity_url = activity_url
-                        session.add(room)
-                        assign_users_activity_url(room)
+            if not IS_DIRECT_ASSIGNMENT: 
+                if room.room_name != "waiting_room" and room.activity_url is None:
+                    wait_time = time.time() - room.start_time.timestamp()
+                    print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
+                        flush=True)
+                    if wait_time >= MAX_WAIT_TIME_UNTIL_GIVE_UP:
+                        prune_room(room)
                     else:
-                        print("check_for_new_activity_urls - activity_url for room " + room.room_name +
-                              " is None", flush=True)
+                        activity_url = request_room_status(room)
+                        if activity_url is not None:
+                            print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+                                " is " + str(activity_url), flush=True)
+                            room.activity_url = activity_url
+                            session.add(room)
+                            assign_users_activity_url(room)
+                        else:
+                            print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+                                " is None", flush=True)
+            else:
+                if room.room_name != "waiting_room":
+                    wait_time = time.time() - room.start_time.timestamp()
+                    print("check_for_new_activity_urls -- room " + room.room_name + " wait time: " + str(wait_time),
+                        flush=True)
+                    if wait_time >= MAX_WAIT_TIME_UNTIL_GIVE_UP:
+                        prune_room(room)
+                    else:
+                        status = request_room_status(room)
+                        if status is not None:
+                            print("check_for_new_activity_urls - room " + room.room_name +
+                                " activity_url is " + str(room.activity_url), flush=True)
+                            # room.activity_url = activity_url
+                            session.add(room)
+                            assign_users_activity_url(room)
+                        else:
+                            print("check_for_new_activity_urls - activity_url for room " + room.room_name +
+                                " is None", flush=True)                
         session.commit()
         session = lobby_db.session
 
