@@ -578,7 +578,7 @@ def send_direct_URLs(room):
             user = room.users[i]
             user_num = i + 1
             user.activity_url = room.activity_url + DIRECT_URL_USER_ID_PREFIX + str(user_num) + DIRECT_URL_USER_NAME_PREFIX + user.name + DIRECT_URL_HTML_PAGE_PREFIX + DIRECT_URL_WEB_PAGE
-            print("send_direct_URLs -- student_url: " + user.activity_url, flush=True)
+            print("send_direct_URLs -- user.activity_url: " + user.activity_url, flush=True)
             user_element = {"name": user.name, "email": user.email, "password": user.password}
             user_list.append(user_element)
             i += 1
@@ -594,15 +594,15 @@ def send_direct_URLs(room):
             ]
         }
     print("send_direct_URLs -- data as string: " + str(data), flush=True)
-    headers = {'Content-Type': 'application/json'}
+    # headers = {'Content-Type': 'application/json'}
     # response = requests.post(direct_url, data=json.dumps(data), headers=headers)
-    response = requests.post(room.activity_url, data=json.dumps(data), headers=headers)
+    # response = requests.post(room.activity_url, data=json.dumps(data), headers=headers)
 
 
-    if response.status_code == 200:
-        print("send_direct_URLs: POST successful", flush=True)
-    else:
-        print("send_direct_URLs: POST failed -- response code " + str(response.status_code))
+    # if response.status_code == 200:
+    #     print("send_direct_URLs: POST successful", flush=True)
+    # else:
+    #     print("send_direct_URLs: POST failed -- response code " + str(response.status_code))
 
 
 
@@ -610,7 +610,7 @@ def request_user(user, room):
     global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG
     with app.app_context():
         request_url = GENERAL_REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
-                      email_to_dns(user.email)
+                    email_to_dns(user.email)
         print("request_user -- request_url: " + request_url, flush=True)
         data = {
             'spec': {
@@ -646,27 +646,30 @@ def request_user(user, room):
 
 
 def request_room_status(room):
-    global GENERAL_REQUEST_PREFIX, SESSION_READINESS_PATH, MODULE_SLUG
-    with app.app_context():
-        request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
-                      "-" + room.room_name
-        # print("request_room_status -- request_url: " + request_url, flush=True)
-    response = requests.get(request_url)
-
-    if response.status_code == 200:
-        print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
-        response_data = response.text
-        print("request_room_status -- URL: " + str(response_data), flush=True)
-        url_response_code = check_url(response_data)
-        if url_response_code < 300:
-            print("request_room_status check_url response code ok: " + str(url_response_code), flush=True)
-            return response_data
-        else:
-            print("request_room_status check_url response code NOT ok: " + str(url_response_code), flush=True)
-            return None
+    global GENERAL_REQUEST_PREFIX, SESSION_READINESS_PATH, MODULE_SLUG, IS_DIRECT_ASSIGNMENT
+    if IS_DIRECT_ASSIGNMENT:
+        return 200
     else:
-        print("request_room_status failed -- response code " + str(response.status_code), flush=True)
-        return None
+        with app.app_context():
+            request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
+                        "-" + room.room_name
+            # print("request_room_status -- request_url: " + request_url, flush=True)
+        response = requests.get(request_url)
+
+        if response.status_code == 200:
+            print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
+            response_data = response.text
+            print("request_room_status -- URL: " + str(response_data), flush=True)
+            url_response_code = check_url(response_data)
+            if url_response_code < 300:
+                print("request_room_status check_url response code ok: " + str(url_response_code), flush=True)
+                return response_data
+            else:
+                print("request_room_status check_url response code NOT ok: " + str(url_response_code), flush=True)
+                return None
+        else:
+            print("request_room_status failed -- response code " + str(response.status_code), flush=True)
+            return None
 
 
 def check_url(response_data):
@@ -709,14 +712,25 @@ def assign_users_activity_url(room):
         print("assign_users_activity_url: activity_url is None -- returning", flush=True)
         return
     for user in users:
-        user.activity_url = activity_url
-        print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
-        session.add(user)
-        user_thread = threadMapping[user.thread_name]
-        user_thread.code = 200
-        user_thread.url = activity_url
-        user_event = eventMapping[user.event_name]
-        users_to_notify.append(user_event)
+        if not IS_DIRECT_ASSIGNMENT:
+            user.activity_url = activity_url
+            print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+            session.add(user)
+            user_thread = threadMapping[user.thread_name]
+            user_thread.code = 200
+            user_thread.url = activity_url
+            user_event = eventMapping[user.event_name]
+            users_to_notify.append(user_event)
+        else:
+            # user.activity_url = activity_url
+            print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+            session.add(user)
+            user_thread = threadMapping[user.thread_name]
+            user_thread.code = 200
+            # user_thread.url = activity_url
+            user_thread.url = user.activity_url          # NOT SURE IF THIS SHOULD BE UNIQUE PER USER
+            user_event = eventMapping[user.event_name]
+            users_to_notify.append(user_event)
 
 
 def email_to_dns(email):
@@ -883,27 +897,46 @@ def assign_new_room(num_users):
         assign_up_to_n_users(room, num_users, is_room_new)
         if not IS_DIRECT_ASSIGNMENT:
             request_session_plus_users(room)
-        else:
-            send_direct_URLs(room)
+        # else:
+        #     send_direct_URLs(room)
 
     # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)
 
 
 def assign_room(user, room, is_room_new):
-    global unassigned_users, session, users_to_notify
+    # global unassigned_users, session, users_to_notify
+    global DIRECT_URL_BASE, DIRECT_URL_AGENT, DIRECT_URL_AGENT_PREFIX, DIRECT_URL_ROOM_ID_PREFIX, DIRECT_URL_USER_ID_PREFIX,         DIRECT_URL_USER_NAME_PREFIX, DIRECT_URL_HTML_PAGE_PREFIX, DIRECT_URL_WEB_PAGE, LOCAL_TIME_ZONE, unassigned_users, session, users_to_notify
+    print("Enter assign_room - user: " + user.name + "  room: " + room.room_name + "  is_room_new: " + str(is_room_new))
     user.room_name = room.room_name
     room.users.append(user)
     room.num_users += 1
+    if room.activity_url is not None:
+        print("assign_room - room.activity_url: " + room.activity_url)
+    else:
+        print("assign_room - rroom.activity_url was None")
+        room.activity_url = DIRECT_URL_BASE + DIRECT_URL_AGENT_PREFIX + DIRECT_URL_AGENT + DIRECT_URL_ROOM_ID_PREFIX + room.room_name 
+        print("assign_room -- room.activity_url is now: " + room.activity_url, flush=True)
     if not is_room_new:
-        request_user(user, room)
-        if room.activity_url is not None:
-            user.activity_url = room.activity_url
+        pass
+    else:
+        print("assign_room - room is not new")
+        if IS_DIRECT_ASSIGNMENT:
+            user.activity_url = room.activity_url + DIRECT_URL_USER_ID_PREFIX + str(room.num_users) + DIRECT_URL_USER_NAME_PREFIX + user.name + DIRECT_URL_HTML_PAGE_PREFIX + DIRECT_URL_WEB_PAGE
             user_thread = threadMapping[user.thread_name]
             user_thread.code = 200
             user_thread.url = user.activity_url
             user_event = eventMapping[user.event_name]
             users_to_notify.append(user_event)
-        request_session_update_users(room)
+        else: 
+            request_user(user, room)
+            if room.activity_url is not None:
+                user.activity_url = room.activity_url
+                user_thread = threadMapping[user.thread_name]
+                user_thread.code = 200
+                user_thread.url = user.activity_url
+                user_event = eventMapping[user.event_name]
+                users_to_notify.append(user_event)
+            request_session_update_users(room)
     session.add(user)
     session.add(room)
     session.commit()
@@ -1019,7 +1052,8 @@ def print_room_assignments():
             for room in created_rooms:
                 print("Room " + str(room.room_name) + " - num_users: " + str(room.num_users), flush=True)
                 for user in room.users:
-                    print("   " + user.user_id, flush=True)
+                    print("   user: " + user.user_id, flush=True)
+                    # print("   user: " + user.user_id + "  user.activity_url: " + user.activity_url, flush=True)
         else:
             print("No rooms yet", flush=True)
 
