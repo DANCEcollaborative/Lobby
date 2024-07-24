@@ -41,8 +41,9 @@
                     socket.on('update_event', function(data) {
                         // Update the content of the 'status' element with the received data
                         console.log('update_event, received: ' + data);
-                        document.getElementById('status').innerHTML = data.message;
-<!--                        window.location.href = data.url-->
+<!--                        document.getElementById('status').innerHTML = data.message;     	-->                   
+                        document.getElementById('status').innerHTML = data;
+<!--                        window.location.href = data.url 	-->
                     });
                 </script>
 
