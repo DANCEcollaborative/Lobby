@@ -36,6 +36,14 @@ OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
 LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
 LOBBY_URL_PREFIX = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 GENERAL_REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
+DIRECT_URL_BASE = 'https://bree.lti.cs.cmu.edu/bazaar/login'
+DIRECT_URL_AGENT = 'llmagent'
+DIRECT_URL_WEB_PAGE = 'sharing_space_chat_mm'
+DIRECT_URL_AGENT_PREFIX = '?roomName='
+DIRECT_URL_ROOM_ID_PREFIX = '&roomId='
+DIRECT_URL_USER_ID_PREFIX = '&id='
+DIRECT_URL_USER_NAME_PREFIX = '&username='
+DIRECT_URL_HTML_PAGE_PREFIX = '&html='
 ACTIVITY_URL_LINK_PREFIX = '<a href="'
 ACTIVITY_URL_LINK_SUFFIX = '">OPE Session</a>'
 SESSION_ONLY_REQUEST_PATH = 'opesessions'
@@ -53,6 +61,7 @@ ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
+IS_DIRECT_ASSIGNMENT = False
 assigner_initialized = False
 nextRoomNum = 15000
 nextThreadNum = 0
@@ -273,8 +282,9 @@ def sail_lobby_connect_prev(user_data):
 def sail_lobby_connect(user_data):
     # global InfoType
     # global user_queue
-    global user_queue, session, nextThreadNum, threadMapping, eventMapping
+    global user_queue, session, nextThreadNum, threadMapping, eventMapping, IS_DIRECT_ASSIGNMENT
     print("sail_lobby_connect: enter", flush=True)
+    IS_DIRECT_ASSIGNMENT = True
     socket_id = request.sid
     info_type = InfoType.socketInfo
 
@@ -547,6 +557,53 @@ def request_session_plus_users(room):
         print("request_session_plus_users: POST successful", flush=True)
     else:
         print("request_session_plus_users: POST failed -- response code " + str(response.status_code))
+
+
+
+def send_direct_URLs(room):
+    global DIRECT_URL_BASE, DIRECT_URL_AGENT, DIRECT_URL_AGENT_PREFIX, DIRECT_URL_ROOM_ID_PREFIX, DIRECT_URL_USER_ID_PREFIX,         DIRECT_URL_USER_NAME_PREFIX, DIRECT_URL_HTML_PAGE_PREFIX, DIRECT_URL_WEB_PAGE, LOCAL_TIME_ZONE, session
+    # room_url = DIRECT_URL_BASE + DIRECT_URL_AGENT_PREFIX + DIRECT_URL_AGENT + DIRECT_URL_ROOM_ID_PREFIX + room 
+    room.activity_url = DIRECT_URL_BASE + DIRECT_URL_AGENT_PREFIX + DIRECT_URL_AGENT + DIRECT_URL_ROOM_ID_PREFIX + room.room_name 
+    print("send_direct_URLs -- room.activity_url: " + room.activity_url, flush=True)
+    start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
+    # room.start_time_string = start_time
+    with app.app_context():
+        user_list = []
+        # room.start_time_string = start_time
+        # session.add(room)
+        # session.commit()
+        session = lobby_db.session
+        i = 0
+        while i < room.num_users:
+            user = room.users[i]
+            user_num = i + 1
+            user.activity_url = room.activity_url + DIRECT_URL_USER_ID_PREFIX + str(user_num) + DIRECT_URL_USER_NAME_PREFIX + user.name + DIRECT_URL_HTML_PAGE_PREFIX + DIRECT_URL_WEB_PAGE
+            print("send_direct_URLs -- student_url: " + user.activity_url, flush=True)
+            user_element = {"name": user.name, "email": user.email, "password": user.password}
+            user_list.append(user_element)
+            i += 1
+        data = {
+            "sessions": [
+                {
+                    "users": user_list,
+                    "moduleSlug": MODULE_SLUG,
+                    "sessionName": room.room_name,
+                    # "startTime": datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat(),
+                    "startTime": start_time,
+                }
+            ]
+        }
+    print("send_direct_URLs -- data as string: " + str(data), flush=True)
+    headers = {'Content-Type': 'application/json'}
+    # response = requests.post(direct_url, data=json.dumps(data), headers=headers)
+    response = requests.post(room.activity_url, data=json.dumps(data), headers=headers)
+
+
+    if response.status_code == 200:
+        print("send_direct_URLs: POST successful", flush=True)
+    else:
+        print("send_direct_URLs: POST failed -- response code " + str(response.status_code))
+
 
 
 def request_user(user, room):
@@ -824,7 +881,10 @@ def assign_new_room(num_users):
         session.commit()
         session = lobby_db.session
         assign_up_to_n_users(room, num_users, is_room_new)
-        request_session_plus_users(room)
+        if not IS_DIRECT_ASSIGNMENT:
+            request_session_plus_users(room)
+        else:
+            send_direct_URLs(room)
 
     # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)
 
