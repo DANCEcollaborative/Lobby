@@ -935,30 +935,26 @@ def assign_room(user, room, is_room_new):
     if room.activity_url is not None:
         print("assign_room - room.activity_url: " + room.activity_url)
     else:
-        print("assign_room - rroom.activity_url was None")
+        print("assign_room - room.activity_url was None")
         room.activity_url = DIRECT_URL_BASE + DIRECT_URL_AGENT_PREFIX + DIRECT_URL_AGENT + DIRECT_URL_ROOM_ID_PREFIX + room.room_name 
         print("assign_room -- room.activity_url is now: " + room.activity_url, flush=True)
-    if not is_room_new:
-        pass
-    else:
-        print("assign_room - room is not new")
-        if IS_DIRECT_ASSIGNMENT:
-            user.activity_url = room.activity_url + DIRECT_URL_USER_ID_PREFIX + str(room.num_users) + DIRECT_URL_USER_NAME_PREFIX + user.name + DIRECT_URL_HTML_PAGE_PREFIX + DIRECT_URL_WEB_PAGE
+    if IS_DIRECT_ASSIGNMENT:
+        user.activity_url = room.activity_url + DIRECT_URL_USER_ID_PREFIX + str(room.num_users) + DIRECT_URL_USER_NAME_PREFIX + user.name + DIRECT_URL_HTML_PAGE_PREFIX + DIRECT_URL_WEB_PAGE
+        user_thread = threadMapping[user.thread_name]
+        user_thread.code = 200
+        user_thread.url = user.activity_url
+        user_event = eventMapping[user.event_name]
+        users_to_notify.append(user_event)
+    else: 
+        request_user(user, room)
+        if room.activity_url is not None:
+            user.activity_url = room.activity_url
             user_thread = threadMapping[user.thread_name]
             user_thread.code = 200
             user_thread.url = user.activity_url
             user_event = eventMapping[user.event_name]
             users_to_notify.append(user_event)
-        else: 
-            request_user(user, room)
-            if room.activity_url is not None:
-                user.activity_url = room.activity_url
-                user_thread = threadMapping[user.thread_name]
-                user_thread.code = 200
-                user_thread.url = user.activity_url
-                user_event = eventMapping[user.event_name]
-                users_to_notify.append(user_event)
-            request_session_update_users(room)
+        request_session_update_users(room)
     session.add(user)
     session.add(room)
     session.commit()
