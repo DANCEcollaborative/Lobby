@@ -14,14 +14,14 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 
 # ROOM ALLOCATION CONSTANTS
-TARGET_USERS_PER_ROOM = 3
+TARGET_USERS_PER_ROOM = 2
 MIN_USERS_PER_ROOM = 1
-MAX_USERS_PER_ROOM = 4
+MAX_USERS_PER_ROOM = 3
 FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 5
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 2
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 5 * 60
 MAX_ROOM_AGE_FOR_NEW_USERS = 10 * 60
 ASSIGNER_SLEEP_TIME = 1
@@ -63,7 +63,7 @@ TIMEOUT_RESPONSE_CODE = 503
 # GLOBAL VARIABLES
 IS_DIRECT_ASSIGNMENT = False
 assigner_initialized = False
-nextRoomNum = 15000
+nextRoomNum = 16000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -1161,7 +1161,8 @@ def assigner():
                 print_room_assignments()
 
             # Check for new activity URLs as they become available
-            check_for_new_activity_urls()
+            if not IS_DIRECT_ASSIGNMENT:
+                check_for_new_activity_urls()
 
             # Wake up all users in the group with new activity URLs or negative status
             for event in users_to_notify:
