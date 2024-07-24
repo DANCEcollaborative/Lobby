@@ -262,7 +262,9 @@ def sail_lobby_connect(user_data):
     user_id = user_data.get('userId')
     print(f"sail_lobby_connect -- info_type: {info_type} -- socket_id: {socket_id} -- user_id:  {user_id}", flush=True)
     user_info = {'info_type': info_type, 'user_id': str(user_id), 'socket_id': str(socket_id)}
-    user_queue.put(user_info)
+    # user_queue.put(user_info)
+    user_queue.put((user_id, user_id))
+
     print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
     emit('response_event', "Data received successfully")
 
