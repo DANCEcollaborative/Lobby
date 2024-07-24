@@ -21,7 +21,7 @@ FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 5
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 5 * 60
 MAX_ROOM_AGE_FOR_NEW_USERS = 10 * 60
 ASSIGNER_SLEEP_TIME = 1
@@ -253,8 +253,8 @@ def sail_lobby(user_id):
     return render_template('lobby.html', user_id=user_id)
 
 
-@socketio.on('sail_lobby_connect')
-def sail_lobby_connect(user_data):
+@socketio.on('sail_lobby_connect_prev')
+def sail_lobby_connect_prev(user_data):
     # global InfoType
     global user_queue
     socket_id = request.sid
@@ -267,6 +267,112 @@ def sail_lobby_connect(user_data):
 
     print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
     emit('response_event', "Data received successfully")
+
+
+@socketio.on('sail_lobby_connect')
+def sail_lobby_connect(user_data):
+    # global InfoType
+    # global user_queue
+    global user_queue, session, nextThreadNum, threadMapping, eventMapping
+    print("sail_lobby_connect: enter", flush=True)
+    socket_id = request.sid
+    info_type = InfoType.socketInfo
+
+    # user_id = user_data.get('userId')
+    # print(f"sail_lobby_connect -- info_type: {info_type} -- socket_id: {socket_id} -- user_id:  {user_id}", flush=True)
+    # user_info = {'info_type': info_type, 'user_id': str(user_id), 'socket_id': str(socket_id)}
+    # # user_queue.put(user_info)
+    # user_queue.put((user_id, user_id))
+
+    # print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
+    # emit('response_event', "Data received successfully")
+
+    nextThreadNum += 1
+    event_name = "event" + str(nextThreadNum)
+    thread_name = "thread" + str(nextThreadNum)
+    event = threading.Event()
+    eventMapping[event_name] = event
+    with thread_lock:
+        current_user = threading.Thread()
+        threadMapping[thread_name] = current_user
+        current_user.event = event
+        user_id = user_data.get('userId')
+        name = user_id
+        email = user_id
+        password = user_id
+        entity_id = user_id
+        print(f"sail_lobby_connect -- user_id: {user_id} -- name: {name} -- email: {email}",
+              flush=True)
+        with app.app_context():
+            user = User.query.filter_by(user_id=user_id).first()
+
+            # If user is not new
+            if user is not None:
+                print("sail_lobby_connect: user " + str(user_id) + " is NOT a new user", flush=True)
+                user_info = {'user_id': str(user_id), 'name': str(name), 'email': str(email),
+                             'password': str(password), 'entity_id': str(entity_id)}
+                duplicate_user = is_duplicate_user(user_info, user)
+
+                # If old non-duplicate user, delete and start over
+                if not duplicate_user:
+                    print("sail_lobby_connect: user " + str(user_id) + " is an old non-duplicate user -- starting over",
+                          flush=True)
+                    session.delete(user)
+                    session.commit()
+                    session = lobby_db.session
+                    if user in unassigned_users:
+                        unassigned_users.remove(user)
+                    user = User(user_id=user_id, name=name, email=email, password=password,
+                                entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
+                                activity_url_notified=False, thread_name=thread_name, event_name=event_name)
+                    session.add(user)
+                    session.commit()
+                    session = lobby_db.session
+                    print("sail_lobby_connect - user.name: " + user.name + "  --  entity_id: " + user.entity_id +
+                          "  --  user.start_time: " + str(datetime.fromtimestamp(user.start_time.timestamp())))
+
+                # If duplicate user, they'll need a URL notification and maybe a room assignment
+                if duplicate_user:
+                    print("sail_lobby_connect: user " + str(user_id) + " is a duplicate user", flush=True)
+                    user.activity_url_notified = False
+                    user.thread_name = thread_name
+                    user.event_name = event_name
+                    session.add(user)
+                    session.commit()
+                    session = lobby_db.session
+
+            # New user
+            if user is None:
+                print("sail_lobby_connect: user " + str(user_id) + " is a new user", flush=True)
+                user = User(user_id=user_id, name=name, email=email, password=password,
+                            entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
+                            activity_url_notified=False, thread_name=thread_name, event_name=event_name)
+                session.add(user)
+                session.commit()
+                session = lobby_db.session
+                print("sail_lobby_connect - user.name: " + user.name + "  --  entity_id: " + user.entity_id +
+                      "  --  user.start_time: " + str(datetime.fromtimestamp(user.start_time.timestamp())))
+
+        user_queue.put((current_user, user_id))
+        # print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
+
+    # print("sail_lobby_connect: about to 'event.wait()'", flush=True)
+    event.wait()
+    # print("sail_lobby_connect: returned from 'event.wait()'", flush=True)
+
+    if current_user.code == 200:
+        print("sail_lobby_connect: code 200; returning URL: " + current_user.url, flush=True)
+        return current_user.url
+    else:
+        print("sail_lobby_connect: returning negative code: " + str(current_user.code), flush=True)
+        response = make_response('', current_user.code)
+        return response
+
+
+
+
+
+
 
 
 
