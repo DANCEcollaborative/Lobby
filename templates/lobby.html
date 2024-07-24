@@ -40,9 +40,12 @@
 
                     socket.on('update_event', function(data) {
                         // Update the content of the 'status' element with the received data
-                        console.log('update_event, received: ' + data);
+                        console.log('update_event, received: ' + data);   
+                        link = "<a href=\"" + data + "\">Click here to join your session</a>"
+                        document.getElementById('status').innerHTML = link;
+<!--                        document.getElementById('status').innerHTML = '<a href="data">Click here to join yoursession</a>';	--> 
 <!--                        document.getElementById('status').innerHTML = data.message;     	-->                   
-                        document.getElementById('status').innerHTML = data;
+<!--                        document.getElementById('status').innerHTML = data;      	-->          
 <!--                        window.location.href = data.url 	-->
                     });
                 </script>
