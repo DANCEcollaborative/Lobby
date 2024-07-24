@@ -367,9 +367,9 @@ def sail_lobby_connect(user_data):
         user_queue.put((current_user, user_id))
         # print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
 
-    print("sail_lobby_connect: about to 'event.wait()'", flush=True)
+    # print("sail_lobby_connect: about to 'event.wait()'", flush=True)
     event.wait()
-    print("sail_lobby_connect: returned from 'event.wait()'", flush=True)
+    # print("sail_lobby_connect: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
         print("sail_lobby_connect: code 200; returning URL: " + current_user.url, flush=True)
