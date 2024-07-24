@@ -6,8 +6,10 @@ import threading
 import queue
 import json
 import requests
+from enum import Enum
 from flask import Flask, request, make_response, render_template
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 
@@ -68,7 +70,11 @@ eventMapping = {}
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+
+
 app = Flask(__name__)
+socketio = SocketIO(app)
+
 app.config['SQLALCHEMY_DATABASE_URI'] =\
         'postgresql://postgres:testpwd@lobby_db:5432/lobby_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -86,6 +92,11 @@ app.config['CORS_ORIGINS'] = [
     'https://staging.projects.sailplatform.org',
     'https://qa.projects.sailplatform.org',
 ]
+
+
+class InfoType(Enum):
+    idInfo = 1
+    socketInfo = 2
 
 
 class Room(lobby_db.Model):
@@ -232,6 +243,29 @@ def getJupyterlabUrl():
         print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
         response = make_response('', current_user.code)
         return response
+
+
+
+
+@app.route('/sail_lobby/<user_id>', methods=['GET', 'POST'])
+def sail_lobby(user_id):
+    print("sail_lobby: received user_id " + str(user_id), flush=True)
+    return render_template('lobby.html', user_id=user_id)
+
+
+@socketio.on('sail_lobby_connect')
+def sail_lobby_connect(user_data):
+    # global InfoType
+    global user_queue
+    socket_id = request.sid
+    info_type = InfoType.socketInfo
+    user_id = user_data.get('userId')
+    print(f"sail_lobby_connect -- info_type: {info_type} -- socket_id: {socket_id} -- user_id:  {user_id}", flush=True)
+    user_info = {'info_type': info_type, 'user_id': str(user_id), 'socket_id': str(socket_id)}
+    user_queue.put(user_info)
+    print("sail_lobby_connect - user_queue length: " + str(user_queue.qsize()), flush=True)
+    emit('response_event', "Data received successfully")
+
 
 
 @app.route('/lobbyRoomNum/<room_num>', methods=['PUT'])
@@ -925,4 +959,7 @@ consumer_thread.start()
 
 if __name__ == '__main__':
     session = lobby_db.session
-    app.run(debug=True)
+    # app.run(debug=True)
+    socketio.run(app, threaded=True, port=5000)
+    # shutdown_server()
+
