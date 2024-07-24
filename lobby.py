@@ -681,7 +681,7 @@ def check_url(response_data):
 
 def check_for_new_activity_urls():
     global session
-    print("enter check_for_new_activity_urls",flush=True)
+    # print("enter check_for_new_activity_urls",flush=True)
     with app.app_context():
         rooms = Room.query.all()
         for room in rooms:
