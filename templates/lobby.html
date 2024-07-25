@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Submission Form with Prefix</title>
-    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <style>
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <h1>Submit Your Text</h1>
@@ -13,6 +20,8 @@
         <input type="text" id="userText" name="userText" required>
         <button type="submit">Submit</button>
     </form>
+
+    <div id="response"></div>
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
@@ -27,12 +36,13 @@
             <!-- socket.emit('sail_lobby_connect', userData); -->
             socket.emit('sail_lobby_connect', userText);
         });
-        
+
         socket.on('update_event', function(data) {
                     // Update the content of the 'status' element with the received data
                     console.log('update_event, received: ' + data);   
                     link = "<a href=\"" + data + "\">Click here to join your session</a>"
-                    document.getElementById('status').innerHTML = link;    
+                    const responseDiv = document.getElementById('response');
+                    responseDiv.innerHTML = link;
         });
     </script>
 
