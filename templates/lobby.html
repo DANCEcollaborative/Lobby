@@ -5,23 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Submission Form with Prefix</title>
     <style>
-        #response {
-            margin-top: 20px;
-            padding: 10px;
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 1em;
+        }
+        button {
+            background-color: #28a745;
+            color: #fff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            word-wrap: break-word;
+            font-size: 1.1em;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        a:hover {
+            color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <h1>Submit Your Text</h1>
-    <form id="textForm">
-        <label for="userText">Enter your user name:</label>
-        <input type="text" id="userText" name="userText" required>
-        <button type="submit">Submit</button>
-    </form>
-
-    <div id="response"></div>
+    <div class="container">
+        <h1>Submit Your Text</h1>
+        <form id="textForm">
+            <label for="userText">Enter your text:</label>
+            <input type="text" id="userText" name="userText" required>
+            <button type="submit">Submit</button>
+        </form>
+        <div id="response"></div>
+    </div>
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
