@@ -27,9 +27,12 @@
             <!-- socket.emit('sail_lobby_connect', userData); -->
             socket.emit('sail_lobby_connect', userText);
         });
-
-        socket.on('text-received', function(message) {
-            alert(message);
+        
+        socket.on('update_event', function(data) {
+                    // Update the content of the 'status' element with the received data
+                    console.log('update_event, received: ' + data);   
+                    link = "<a href=\"" + data + "\">Click here to join your session</a>"
+                    document.getElementById('status').innerHTML = link;    
         });
     </script>
 
