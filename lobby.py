@@ -315,7 +315,7 @@ def sail_lobby_connect(user_data):
         threadMapping[thread_name] = current_user
         current_user.event = event
         # user_id = user_data.get('userId')
-        user_id = user_data
+        user_id = ''.join(char for char in user_data if char.isalnum())
         name = user_id
         email = user_id
         password = user_id
