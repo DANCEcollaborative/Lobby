@@ -162,10 +162,16 @@ class User(lobby_db.Model):
 #                   d. password
 #                   e. entityId
 #                   f. Bazaar agent (I added this data requirement)
-@app.route('/login/<user_id>', methods=['GET', 'POST'])
-def login_get(user_id):
+@app.route('/PREV-login/<user_id>', methods=['GET', 'POST'])
+def PREV_login_get(user_id):
     print("Login: received user_id " + str(user_id), flush=True)
     return render_template('lobby.html', user_id=user_id)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_get():
+    print("Login: received WITHOUT user_id ", flush=True)
+    return render_template('lobby.html')
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
@@ -268,7 +274,8 @@ def sail_lobby_connect_prev(user_data):
     global user_queue
     socket_id = request.sid
     info_type = InfoType.socketInfo
-    user_id = user_data.get('userId')
+    # user_id = user_data.get('userId')
+    user_id = user_data
     print(f"sail_lobby_connect -- info_type: {info_type} -- socket_id: {socket_id} -- user_id:  {user_id}", flush=True)
     user_info = {'info_type': info_type, 'user_id': str(user_id), 'socket_id': str(socket_id)}
     # user_queue.put(user_info)
@@ -283,7 +290,7 @@ def sail_lobby_connect(user_data):
     # global InfoType
     # global user_queue
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, IS_DIRECT_ASSIGNMENT
-    print("sail_lobby_connect: enter", flush=True)
+    print("sail_lobby_connect: enter - user_data = " + user_data, flush=True)
     emit('response_event', "Data received successfully")
     IS_DIRECT_ASSIGNMENT = True
     socket_id = request.sid
@@ -307,7 +314,8 @@ def sail_lobby_connect(user_data):
         current_user = threading.Thread()
         threadMapping[thread_name] = current_user
         current_user.event = event
-        user_id = user_data.get('userId')
+        # user_id = user_data.get('userId')
+        user_id = user_data
         name = user_id
         email = user_id
         password = user_id
