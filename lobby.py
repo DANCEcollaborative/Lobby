@@ -170,7 +170,7 @@ def PREV_login_get(user_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_get():
-    # print("Login: received WITHOUT user_id ", flush=True)
+    # print("Login: received WITHOUT user_id ", flush=True)   
     return render_template('lobby.html')
 
 @app.route('/getJupyterlabUrl', methods=['POST'])
