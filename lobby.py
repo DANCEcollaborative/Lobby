@@ -19,7 +19,7 @@ FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 30
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 5
 MAX_WAIT_TIME_UNTIL_GIVE_UP = 5 * 60
 MAX_ROOM_AGE_FOR_NEW_USERS = 10 * 60
 ASSIGNER_SLEEP_TIME = 1
@@ -45,14 +45,15 @@ SESSION_READINESS_PATH = 'sessionReadiness'
 # MODULE_SLUG = 'ope-author-domain-ana-mnuf5kh7'
 # MODULE_SLUG = 'ope-learn-autoscalin-mpfs4jua'
 # MODULE_SLUG = 'ope-learn-practice-cfhlsd5z'     # Summer 2024 FCDS, "Pittsburgh" students (not certificate)
-MODULE_SLUG = 'ope-learn-practice-7mfej2fo'     # Summer 2024 FCDS, "Certificate" students
+# MODULE_SLUG = 'ope-learn-practice-7mfej2fo'     # Summer 2024 FCDS, "Certificate" students
+MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 15000
+nextRoomNum = 25100
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
