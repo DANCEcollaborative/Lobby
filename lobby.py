@@ -192,6 +192,9 @@ def getJupyterlabUrl():
             # New user
             if user is None:
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
+                print("getJupyterlabUrl: About to print entity_id", flush=True)
+                print("getJupyterlabUrl: entity_id: " + str(entity_id), flush=True)
+                print("getJupyterlabUrl: entity_id successfully printed", flush=True)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name)
