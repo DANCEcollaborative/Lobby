@@ -37,7 +37,7 @@ LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
 LOBBY_URL_PREFIX = 'http://bree.lti.cs.cmu.edu:5000/sail_lobby/'
 GENERAL_REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
 DIRECT_URL_BASE = 'https://bree.lti.cs.cmu.edu/bazaar/login'
-DIRECT_URL_AGENT = 'llm'
+DIRECT_URL_AGENT = 'llmprompt'
 DIRECT_URL_WEB_PAGE = 'sharing_space_chat_mm'
 DIRECT_URL_AGENT_PREFIX = '?roomName='
 DIRECT_URL_ROOM_ID_PREFIX = '&roomId='
