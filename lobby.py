@@ -53,7 +53,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 25100
+nextRoomNum = 28000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -176,7 +176,7 @@ def getJupyterlabUrl():
                     session.add(user)
                     session.commit()
                     session = lobby_db.session
-                    print("getJupyterlabUrl - user.name: " + user.name + "  --  entity_id: " + user.entity_id +
+                    print("getJupyterlabUrl - user.name: " + user.name +
                           "  --  user.start_time: " + str(datetime.fromtimestamp(user.start_time.timestamp())))
 
                 # If duplicate user, they'll need a URL notification and maybe a room assignment
@@ -198,8 +198,8 @@ def getJupyterlabUrl():
                 session.add(user)
                 session.commit()
                 session = lobby_db.session
-                print("getJupyterlabUrl - user.name: " + user.name + "  --  entity_id: " + user.entity_id +
-                      "  --  user.start_time: " + str(datetime.fromtimestamp(user.start_time.timestamp())))
+                print("getJupyterlabUrl - user.name: " + user.name + "  --  user.start_time: "
+                      + str(datetime.fromtimestamp(user.start_time.timestamp())))
 
         user_queue.put((current_user, user_id))
         # print("getJupyterlabUrl - user_queue length: " + str(user_queue.qsize()), flush=True)
@@ -520,8 +520,6 @@ def is_duplicate_user(user_info, user):
         if email != user.email:
             return False
         if password != user.password:
-            return False
-        if entity_id != user.entity_id:
             return False
         return True
 
