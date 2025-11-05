@@ -10,6 +10,7 @@ from flask import Flask, request, make_response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+from urllib.parse import unquote
 
 # ROOM ALLOCATION CONSTANTS
 TARGET_USERS_PER_ROOM = 3
@@ -271,7 +272,7 @@ def maxRoomAge(max_age):
 @app.route('/requestPrefix/<request_prefix>', methods=['PUT'])
 def requestPrefix(request_prefix):
     global REQUEST_PREFIX
-    REQUEST_PREFIX = request_prefix
+    REQUEST_PREFIX = unquote(request_prefix)
     print("lobbyRequestPrefix: request_prefix = " + request_prefix, flush=True)
     return "OK", 200
 
