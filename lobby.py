@@ -33,19 +33,13 @@ OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
 OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
 LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
 LOBBY_URL_PREFIX = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
-GENERAL_REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
+REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
 ACTIVITY_URL_LINK_PREFIX = '<a href="'
 ACTIVITY_URL_LINK_SUFFIX = '">OPE Session</a>'
 SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
-# MODULE_SLUG = 'ope-learn-practice-p032vbfd'
-# MODULE_SLUG = 'ope-learn-practice-pfioe1fr'
-# MODULE_SLUG = 'ope-author-domain-ana-mnuf5kh7'
-# MODULE_SLUG = 'ope-learn-autoscalin-mpfs4jua'
-# MODULE_SLUG = 'ope-learn-practice-cfhlsd5z'     # Summer 2024 FCDS, "Pittsburgh" students (not certificate)
-# MODULE_SLUG = 'ope-learn-practice-7mfej2fo'     # Summer 2024 FCDS, "Certificate" students
 MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
@@ -220,65 +214,101 @@ def getJupyterlabUrl():
 @app.route('/lobbyRoomNum/<room_num>', methods=['PUT'])
 def lobbyRoomNum(room_num):
     global nextRoomNum
-    print("lobbyRoomNum: room_num = " + room_num, flush=True)
     nextRoomNum = int(room_num)
+    print("lobbyRoomNum: room_num = " + room_num, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyTargetUsers/<target_users>', methods=['PUT'])
 def lobbyTargetUsers(target_users):
     global TARGET_USERS_PER_ROOM
-    print("lobbyTargetUsers: target_users = " + target_users, flush=True)
     TARGET_USERS_PER_ROOM = int(target_users)
+    print("lobbyTargetUsers: target_users = " + target_users, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyMinUsers/<min_users>', methods=['PUT'])
 def lobbyMinUsers(min_users):
     global MIN_USERS_PER_ROOM
-    print("lobbyMinUsers: min_users = " + min_users, flush=True)
     MIN_USERS_PER_ROOM = int(min_users)
+    print("lobbyMinUsers: min_users = " + min_users, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyMaxUsers/<max_users>', methods=['PUT'])
 def lobbyMaxUsers(max_users):
     global MAX_USERS_PER_ROOM
-    print("lobbyMaxUsers: max_users = " + max_users, flush=True)
     MAX_USERS_PER_ROOM = int(max_users)
+    print("lobbyMaxUsers: max_users = " + max_users, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyMaxRoomAge/<max_age>', methods=['PUT'])
 def lobbyMaxRoomAge(max_age):
     global MAX_ROOM_AGE_FOR_NEW_USERS
-    print("lobbyMaxRoomAge: max_age = " + max_age, flush=True)
     MAX_ROOM_AGE_FOR_NEW_USERS = int(max_age)
+    print("lobbyMaxRoomAge: max_age = " + max_age, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyMaxGiveUp/<max_give_up>', methods=['PUT'])
 def lobbyMaxGiveUp(max_give_up):
     global MAX_WAIT_TIME_UNTIL_GIVE_UP
-    print("lobbyMaxGiveUp: max_give_up = " + max_give_up, flush=True)
     MAX_WAIT_TIME_UNTIL_GIVE_UP = int(max_give_up)
+    print("lobbyMaxGiveUp: max_give_up = " + max_give_up, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyMaxSubAssign/<max_sub_assign>', methods=['PUT'])
 def lobbyMaxSubAssign(max_sub_assign):
     global MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT
-    print("lobbyMaxSubAssign: max_sub_assign = " + max_sub_assign, flush=True)
     MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = int(max_sub_assign)
+    print("lobbyMaxSubAssign: max_sub_assign = " + max_sub_assign, flush=True)
     return "OK", 200
 
 
 @app.route('/lobbyModuleSlug/<module_slug>', methods=['PUT'])
 def lobbyModuleSlug(module_slug):
     global MODULE_SLUG
-    print("lobbyModuleSlug: module_slug = " + module_slug, flush=True)
     MODULE_SLUG = module_slug
+    print("lobbyModuleSlug: module_slug = " + module_slug, flush=True)
     return "OK", 200
+
+
+@app.route('/lobbyRequestPrefix/<request_prefix>', methods=['PUT'])
+def lobbyRequestPrefix(request_prefix):
+    global REQUEST_PREFIX
+    REQUEST_PREFIX = request_prefix
+    print("lobbyRequestPrefix: request_prefix = " + request_prefix, flush=True)
+    return "OK", 200
+
+
+@app.route('/lobbyPrintValues', methods=['PUT'])
+def lobbyPrintValues():
+    global MODULE_SLUG, REQUEST_PREFIX, MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT, \
+        MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
+        MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum
+    # print("Target Users:          " + str(TARGET_USERS_PER_ROOM) +  "\n" + \
+    # print("Min Users:             " + str(MIN_USERS_PER_ROOM))
+    # print("Max Users:             " + str(MAX_USERS_PER_ROOM))
+    # print("Wait until sub-assign: " + str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT))
+    # print("Next room number:      " + str(nextRoomNum))
+    # print("Wait until give-up:    " + str(MAX_WAIT_TIME_UNTIL_GIVE_UP))
+    # print("Max room assign age:   " + str(MAX_ROOM_AGE_FOR_NEW_USERS))
+    # print("Request Prefix:        " + REQUEST_PREFIX)
+    # print("Module Slug:           " + MODULE_SLUG, flush=True)
+    print("Target Users:          " + str(TARGET_USERS_PER_ROOM) +  "\n" + \
+    "Min Users:             " + str(MIN_USERS_PER_ROOM) +  "\n" + \
+    "Max Users:             " + str(MAX_USERS_PER_ROOM) +  "\n" + \
+    "Wait until sub-assign: " + str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT) +  "\n" + \
+    "Next room number:      " + str(nextRoomNum) +  "\n" + \
+    "Wait until give-up:    " + str(MAX_WAIT_TIME_UNTIL_GIVE_UP) +  "\n" + \
+    "Max room assign age:   " + str(MAX_ROOM_AGE_FOR_NEW_USERS) +  "\n" + \
+    "Request Prefix:        " + REQUEST_PREFIX +  "\n" + \
+    "Module Slug:           " + MODULE_SLUG, flush=True)
+    return "OK", 200
+
+
 
 
 @app.route('/lobbyDeleteRoom/<room_name>', methods=['PUT'])
@@ -302,10 +332,10 @@ def lobbyDeleteUser(user_id):
 
 
 def request_session_update_users(room):
-    global GENERAL_REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
+    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
     # print("request_session_update_users -- request_url: " + request_url, flush=True)
     with app.app_context():
-        request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
+        request_url = REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
         print("request_session_update_users -- request_url: " + request_url, flush=True)
         user_list = []
@@ -351,9 +381,9 @@ def request_session_update_users(room):
 
 
 def request_session_plus_users(room):
-    global GENERAL_REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
+    global REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
         LOCAL_TIME_ZONE, session
-    request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
+    request_url = REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
     start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
     # room.start_time_string = start_time
@@ -393,7 +423,7 @@ def request_session_plus_users(room):
 def request_user(user, room):
     global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG
     with app.app_context():
-        request_url = GENERAL_REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
+        request_url = REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
                       email_to_dns(user.email)
         print("request_user -- request_url: " + request_url, flush=True)
         data = {
@@ -430,9 +460,9 @@ def request_user(user, room):
 
 
 def request_room_status(room):
-    global GENERAL_REQUEST_PREFIX, SESSION_READINESS_PATH, MODULE_SLUG
+    global REQUEST_PREFIX, SESSION_READINESS_PATH, MODULE_SLUG
     with app.app_context():
-        request_url = GENERAL_REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
+        request_url = REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
         # print("request_room_status -- request_url: " + request_url, flush=True)
     response = requests.get(request_url)
