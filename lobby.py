@@ -363,7 +363,7 @@ def printValues():
         f"Print Parameters - printValues\n"
     )
     print(responseValue)
-    Response(responseValue, status=200, mimetype="text/plain")
+    return Response(responseValue, status=200, mimetype="text/plain")
 
 
 def request_session_update_users(room):
