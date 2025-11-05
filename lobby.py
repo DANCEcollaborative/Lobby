@@ -343,6 +343,7 @@ def printValues():
     "Delete Room - deleteRoom:               " + "CAUTION" +  "\n" + \
     "Delete Room - deleteUser:               " + "CAUTION" +  "\n" + \
     "Module Slug - moduleSlug:               " + MODULE_SLUG +  "\n" + \
+    "Print Rooms - printRooms\n" + \
     "Print Parameters - printValues\n", flush=True)
     print("\n\n\n")
     responseValue = (
@@ -358,6 +359,7 @@ def printValues():
         f"Delete Room - deleteRoom:               CAUTION\n" 
         f"Delete Room - deleteUser:               CAUTION\n" 
         f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
+        f"Print Rooms - printRooms\n"
         f"Print Parameters - printValues\n"
     )
     print(responseValue)
