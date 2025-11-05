@@ -331,20 +331,6 @@ def printValues():
     global MODULE_SLUG, REQUEST_PREFIX, MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT, \
         MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
         MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum, NAMESPACE
-    # print("Target Users - targetUsers:             " + str(TARGET_USERS_PER_ROOM) + "\n" + \
-    # "Min Users - minUsers:                   " + str(MIN_USERS_PER_ROOM) +  "\n" + \
-    # "Max Users - maxUsers:                   " + str(MAX_USERS_PER_ROOM) +  "\n" + \
-    # "Suboptimal assign wait - subAssignWait: " + str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT) +  "\n" + \
-    # "Next room number - roomNum:             " + str(nextRoomNum) +  "\n" + \
-    # "Give-up wait - giveUpWait:              " + str(MAX_WAIT_TIME_UNTIL_GIVE_UP) +  "\n" + \
-    # "Max room assign age - maxRoomAge:       " + str(MAX_ROOM_AGE_FOR_NEW_USERS) +  "\n" + \
-    # "Request Prefix - requestPrefix:         " + REQUEST_PREFIX +  "\n" + \
-    # "Namespace - namespace:                  " + NAMESPACE +  "\n" + \
-    # "Delete Room - deleteRoom:               " + "CAUTION" +  "\n" + \
-    # "Delete Room - deleteUser:               " + "CAUTION" +  "\n" + \
-    # "Module Slug - moduleSlug:               " + MODULE_SLUG +  "\n" + \
-    # "Print Rooms - printRooms\n" + \
-    # "Print Parameters - printValues\n", flush=True)
     responseValue = (
         f"\nTarget Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
         f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
