@@ -6,11 +6,13 @@ import threading
 import queue
 import json
 import requests
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, Response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from urllib.parse import unquote
+import io
+from contextlib import redirect_stdout
 
 # ROOM ALLOCATION CONSTANTS
 TARGET_USERS_PER_ROOM = 3
@@ -217,7 +219,7 @@ def getJupyterlabUrl():
 def targetUsers(target_users):
     global TARGET_USERS_PER_ROOM
     TARGET_USERS_PER_ROOM = int(target_users)
-    print("lobbyTargetUsers: target_users = " + target_users, flush=True)
+    print("targetUsers: target_users = " + target_users, flush=True)
     return "OK", 200
 
 
@@ -225,7 +227,7 @@ def targetUsers(target_users):
 def minUsers(min_users):
     global MIN_USERS_PER_ROOM
     MIN_USERS_PER_ROOM = int(min_users)
-    print("lobbyMinUsers: min_users = " + min_users, flush=True)
+    print("minUsers: min_users = " + min_users, flush=True)
     return "OK", 200
 
 
@@ -233,7 +235,7 @@ def minUsers(min_users):
 def maxUsers(max_users):
     global MAX_USERS_PER_ROOM
     MAX_USERS_PER_ROOM = int(max_users)
-    print("lobbyMaxUsers: max_users = " + max_users, flush=True)
+    print("maxUsers: max_users = " + max_users, flush=True)
     return "OK", 200
 
 
@@ -241,7 +243,7 @@ def maxUsers(max_users):
 def subAssignWait(max_sub_assign):
     global MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT
     MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = int(max_sub_assign)
-    print("lobbyMaxSubAssign: max_sub_assign = " + max_sub_assign, flush=True)
+    print("subAssignWait: max_sub_assign = " + max_sub_assign, flush=True)
     return "OK", 200
 
 
@@ -249,7 +251,7 @@ def subAssignWait(max_sub_assign):
 def roomNum(room_num):
     global nextRoomNum
     nextRoomNum = int(room_num)
-    print("lobbyRoomNum: room_num = " + room_num, flush=True)
+    print("roomNum: room_num = " + room_num, flush=True)
     return "OK", 200
 
 
@@ -257,7 +259,7 @@ def roomNum(room_num):
 def giveUpWait(max_give_up):
     global MAX_WAIT_TIME_UNTIL_GIVE_UP
     MAX_WAIT_TIME_UNTIL_GIVE_UP = int(max_give_up)
-    print("lobbyMaxGiveUp: max_give_up = " + max_give_up, flush=True)
+    print("giveUpWait: max_give_up = " + max_give_up, flush=True)
     return "OK", 200
 
 
@@ -265,7 +267,7 @@ def giveUpWait(max_give_up):
 def maxRoomAge(max_age):
     global MAX_ROOM_AGE_FOR_NEW_USERS
     MAX_ROOM_AGE_FOR_NEW_USERS = int(max_age)
-    print("lobbyMaxRoomAge: max_age = " + max_age, flush=True)
+    print("maxRoomAge: max_age = " + max_age, flush=True)
     return "OK", 200
 
 
@@ -273,7 +275,7 @@ def maxRoomAge(max_age):
 def requestPrefix(request_prefix):
     global REQUEST_PREFIX
     REQUEST_PREFIX = unquote(request_prefix)
-    print("lobbyRequestPrefix: request_prefix = " + request_prefix, flush=True)
+    print("requestPrefix: request_prefix = " + request_prefix, flush=True)
     return "OK", 200
 
 
@@ -281,13 +283,13 @@ def requestPrefix(request_prefix):
 def namespace(namespace):
     global NAMESPACE
     NAMESPACE = namespace
-    print("lobbyNamespace: namespace = " + namespace, flush=True)
+    print("namespace: namespace = " + namespace, flush=True)
     return "OK", 200
 
 
 @app.route('/deleteRoom/<room_name>', methods=['PUT'])
 def deleteRoom(room_name):
-    print("lobbyDeleteRoom: room_name = " + room_name, flush=True)
+    print("deleteRoom: room_name = " + room_name, flush=True)
     delete_result = delete_room(room_name)
     if delete_result is not None:
         return "OK", 200
@@ -297,7 +299,7 @@ def deleteRoom(room_name):
 
 @app.route('/deleteUser/<user_id>', methods=['PUT'])
 def deleteUser(user_id):
-    print("lobbyDeleteUser: user_name = " + user_id, flush=True)
+    print("deleteUser: user_name = " + user_id, flush=True)
     delete_result = delete_user(user_id)
     if delete_result is not None:
         return "OK", 200
@@ -309,8 +311,19 @@ def deleteUser(user_id):
 def moduleSlug(module_slug):
     global MODULE_SLUG
     MODULE_SLUG = module_slug
-    print("lobbyModuleSlug: module_slug = " + module_slug, flush=True)
+    print("moduleSlug: module_slug = " + module_slug, flush=True)
     return "OK", 200
+
+
+@app.route('/printRooms', methods=['PUT'])
+def printRooms():
+    print("printRooms:", flush=True)
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        print_room_assignments()
+    responseValue = buffer.getvalue()
+    print(responseValue, flush=True)
+    return Response(responseValue, status=200, mimetype='text/plain')
 
  
 @app.route('/printValues', methods=['PUT'])
@@ -331,7 +344,24 @@ def printValues():
     "Delete Room - deleteUser:               " + "CAUTION" +  "\n" + \
     "Module Slug - moduleSlug:               " + MODULE_SLUG +  "\n" + \
     "Print Parameters - printValues\n", flush=True)
-    return "OK", 200
+    print("\n\n\n")
+    responseValue = (
+        f"Target Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
+        f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
+        f"Max Users - maxUsers:                   {str(MAX_USERS_PER_ROOM)}\n" 
+        f"Suboptimal assign wait - subAssignWait: {str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT)}\n"
+        f"Next room number - roomNum:             {str(nextRoomNum)}\n"
+        f"Give-up wait - giveUpWait:              {str(MAX_WAIT_TIME_UNTIL_GIVE_UP)}\n"
+        f"Max room assign age - maxRoomAge:       {str(MAX_ROOM_AGE_FOR_NEW_USERS)}\n"
+        f"Request Prefix - requestPrefix:         {REQUEST_PREFIX}\n"
+        f"Namespace - namespace:                  {NAMESPACE}\n"
+        f"Delete Room - deleteRoom:               CAUTION\n" 
+        f"Delete Room - deleteUser:               CAUTION\n" 
+        f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
+        f"Print Parameters - printValues\n"
+    )
+    print(responseValue)
+    Response(responseValue, status=200, mimetype="text/plain")
 
 
 def request_session_update_users(room):
