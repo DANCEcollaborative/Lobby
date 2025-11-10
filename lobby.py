@@ -388,7 +388,7 @@ def request_session_update_users(room):
     else:
         print("request_session_update_users: POST failed -- response code " + str(response.status_code), flush=True)
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def request_session_plus_users(room):
     global REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
         LOCAL_TIME_ZONE, session
@@ -561,7 +561,7 @@ def is_duplicate_user(user_info, user):
             return False
         return True
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_rooms():
     global unassigned_users, TARGET_USERS_PER_ROOM, MAX_USERS_PER_ROOM
     num_unassigned_users = len(unassigned_users)
@@ -612,7 +612,7 @@ def get_users_due_for_suboptimal():
             i += 1
     return users_due_for_suboptimal
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_rooms_under_n_users(n_users):
     # Assuming
     #   -- assign to rooms that are most-under n-users first
@@ -634,7 +634,7 @@ def assign_rooms_under_n_users(n_users):
             assign_up_to_n_users(available_rooms_under_n_users[i], n_users, is_room_new)
             i += 1
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_up_to_n_users(room, num_users, is_room_new):
     global unassigned_users
     while (len(room.users) < num_users) and (len(unassigned_users) > 0):
@@ -678,6 +678,7 @@ def get_sorted_available_rooms(max_users):
     return room_list
 
 
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
     while len(unassigned_users) >= num_users_per_room:
@@ -685,7 +686,7 @@ def assign_new_rooms(num_users_per_room):
         #       " -- num_users_per_room: " + str(num_users_per_room), flush=True)
         assign_new_room(num_users_per_room)
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_new_room(num_users):
     global nextRoomNum, session
 
@@ -705,7 +706,7 @@ def assign_new_room(num_users):
 
     # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_room(user, room, is_room_new):
     global unassigned_users, session, users_to_notify
     user.room_name = room.room_name
