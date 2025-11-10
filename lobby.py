@@ -429,7 +429,7 @@ def request_session_plus_users(room):
         print("request_session_plus_users: POST successful", flush=True)
     except RequestException as e:
         # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
-        print(f"An error occurred during the request: {e}"
+        print(f"An error occurred during the request: {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
     if response:
