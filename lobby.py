@@ -131,7 +131,7 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, NAMESPACE
-    # print("getJupyterlabUrl: enter", flush=True)
+    print("getJupyterlabUrl: enter", flush=True)
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
