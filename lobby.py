@@ -6,6 +6,7 @@ import threading
 import queue
 import json
 import requests
+from requests.exceptions import RequestException
 from flask import Flask, request, make_response, Response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -420,12 +421,19 @@ def request_session_plus_users(room):
         }
     print("request_session_plus_users -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
-    response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
-    if response.status_code == 200:
+    response = None
+    try:
+        response = requests.post(request_url, data=json.dumps(data), headers=headers)
+        response.raise_for_status()
         print("request_session_plus_users: POST successful", flush=True)
-    else:
-        print("request_session_plus_users: POST failed -- response code " + str(response.status_code))
+    except RequestException as e:
+        # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
+        print(f"An error occurred during the request: {e}"
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    if response:
+        print(f"Status Code: {response.status_code}")
 
 
 def request_user(user, room):
