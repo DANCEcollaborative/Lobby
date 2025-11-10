@@ -83,6 +83,7 @@ app.config['CORS_ORIGINS'] = [
     'https://projects.sailplatform.org',
     'https://staging.projects.sailplatform.org',
     'https://qa.projects.sailplatform.org',
+    'https://collab.lti.cs.cmu.edu',
 ]
 
 
