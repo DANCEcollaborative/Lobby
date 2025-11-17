@@ -437,7 +437,7 @@ def request_session_plus_users(room):
 
 
 def request_user(user, room):
-    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG
+    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG, REQUEST_PREFIX
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
                       email_to_dns(user.email)
