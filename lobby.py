@@ -6,6 +6,7 @@ import threading
 import queue
 import json
 import requests
+from requests.exceptions import RequestException
 from flask import Flask, request, make_response, Response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -131,7 +132,7 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, NAMESPACE
-    # print("getJupyterlabUrl: enter", flush=True)
+    print("getJupyterlabUrl: enter", flush=True)
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
     thread_name = "thread" + str(nextThreadNum)
@@ -387,7 +388,7 @@ def request_session_update_users(room):
     else:
         print("request_session_update_users: POST failed -- response code " + str(response.status_code), flush=True)
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def request_session_plus_users(room):
     global REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
         LOCAL_TIME_ZONE, session
@@ -420,16 +421,23 @@ def request_session_plus_users(room):
         }
     print("request_session_plus_users -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
-    response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
-    if response.status_code == 200:
+    response = None
+    try:
+        response = requests.post(request_url, data=json.dumps(data), headers=headers)
+        response.raise_for_status()
         print("request_session_plus_users: POST successful", flush=True)
-    else:
-        print("request_session_plus_users: POST failed -- response code " + str(response.status_code))
+    except RequestException as e:
+        # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
+        print(f"An error occurred during the request: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    if response:
+        print(f"Status Code: {response.status_code}")
 
 
 def request_user(user, room):
-    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG
+    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG, REQUEST_PREFIX
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
                       email_to_dns(user.email)
@@ -553,7 +561,7 @@ def is_duplicate_user(user_info, user):
             return False
         return True
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_rooms():
     global unassigned_users, TARGET_USERS_PER_ROOM, MAX_USERS_PER_ROOM
     num_unassigned_users = len(unassigned_users)
@@ -604,7 +612,7 @@ def get_users_due_for_suboptimal():
             i += 1
     return users_due_for_suboptimal
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_rooms_under_n_users(n_users):
     # Assuming
     #   -- assign to rooms that are most-under n-users first
@@ -626,7 +634,7 @@ def assign_rooms_under_n_users(n_users):
             assign_up_to_n_users(available_rooms_under_n_users[i], n_users, is_room_new)
             i += 1
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_up_to_n_users(room, num_users, is_room_new):
     global unassigned_users
     while (len(room.users) < num_users) and (len(unassigned_users) > 0):
@@ -670,6 +678,7 @@ def get_sorted_available_rooms(max_users):
     return room_list
 
 
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_new_rooms(num_users_per_room):
     global unassigned_users
     while len(unassigned_users) >= num_users_per_room:
@@ -677,7 +686,7 @@ def assign_new_rooms(num_users_per_room):
         #       " -- num_users_per_room: " + str(num_users_per_room), flush=True)
         assign_new_room(num_users_per_room)
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_new_room(num_users):
     global nextRoomNum, session
 
@@ -697,7 +706,7 @@ def assign_new_room(num_users):
 
     # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)
 
-
+# TODO: Check if assignment request chain fails and react accordingly
 def assign_room(user, room, is_room_new):
     global unassigned_users, session, users_to_notify
     user.room_name = room.room_name
