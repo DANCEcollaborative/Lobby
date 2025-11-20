@@ -473,8 +473,8 @@ def request_room_status(room):
         request_url = REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
         # print("request_room_status -- request_url: " + request_url, flush=True)
-    # response = requests.get(request_url, verify=False)
-    response = requests.get(request_url)
+    response = requests.get(request_url, verify=False)
+    # response = requests.get(request_url)
 
     if response.status_code == 200:
         print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
@@ -493,8 +493,8 @@ def request_room_status(room):
 
 
 def check_url(response_data):
-    url_response = requests.get(response_data)
-    # url_response = requests.get(response_data, verify=False)
+    # url_response = requests.get(response_data)
+    url_response = requests.get(response_data, verify=False)
     return url_response.status_code
 
 
