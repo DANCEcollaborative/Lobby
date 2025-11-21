@@ -381,8 +381,7 @@ def request_session_update_users(room):
         }
     print("request_session_update_users -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
-    # response = requests.put(request_url, data=json.dumps(data), headers=headers)
-    response = requests.put(request_url, data=json.dumps(data), headers=headers, verify=False)
+    response = requests.put(request_url, data=json.dumps(data), headers=headers)
 
     if response.status_code == 200:
         print("request_session_update_users: POST successful", flush=True)
@@ -425,8 +424,7 @@ def request_session_plus_users(room):
 
     response = None
     try:
-        # response = requests.post(request_url, data=json.dumps(data), headers=headers)
-        response = requests.post(request_url, data=json.dumps(data), headers=headers, verify=False)
+        response = requests.post(request_url, data=json.dumps(data), headers=headers)
         response.raise_for_status()
         print("request_session_plus_users: POST successful", flush=True)
     except RequestException as e:
@@ -461,8 +459,7 @@ def request_user(user, room):
         }
     print("request_user -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
-    # response = requests.post(request_url, data=json.dumps(data), headers=headers)
-    response = requests.post(request_url, data=json.dumps(data), headers=headers, verify=False)
+    response = requests.post(request_url, data=json.dumps(data), headers=headers)
 
     if response.status_code == 200:
         print("request_user: POST succeeded", flush=True)
@@ -476,8 +473,7 @@ def request_room_status(room):
         request_url = REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
         # print("request_room_status -- request_url: " + request_url, flush=True)
-    # response = requests.get(request_url)
-    response = requests.get(request_url, verify=False)
+    response = requests.get(request_url)
 
     if response.status_code == 200:
         print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
@@ -496,8 +492,7 @@ def request_room_status(room):
 
 
 def check_url(response_data):
-    # url_response = requests.get(response_data)
-    url_response = requests.get(response_data, verify=False)
+    url_response = requests.get(response_data)
     return url_response.status_code
 
 
