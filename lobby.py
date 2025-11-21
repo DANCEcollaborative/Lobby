@@ -502,7 +502,13 @@ def request_room_status(room):
         print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
         response_data = response.text
         print("request_room_status -- URL: " + str(response_data), flush=True)
-        return response_data
+        url_response_code = check_url(response_data)
+        if url_response_code < 300:
+            print("request_room_status check_url response code ok: " + str(url_response_code), flush=True
+            return response_data
+        else:
+            print("request_room_status check_url response code NOT ok: " + str(url_response_code), flush=True)
+            return None
     else:
         print("request_room_status failed -- response code " + str(response.status_code), flush=True)
         return None
