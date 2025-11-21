@@ -517,19 +517,21 @@ def request_room_status(room):
 
 
 def check_url(response_data):
-    response = None
-    try:
-        response = requests.get(response_data)
-        response.raise_for_status()
-        print("request_session_update_users: POST successful", flush=True)
-    except RequestException as e:
-        # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
-        print(f"An error occurred during the request: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-    if response:
-        print(f"Status Code: {response.status_code}")
-    return response.status_code
+    url_response = requests.get(response_data)
+    return url_response.status_code
+    # response = None
+    # try:
+    #     response = requests.get(response_data)
+    #     response.raise_for_status()
+    #     print("request_session_update_users: POST successful", flush=True)
+    # except RequestException as e:
+    #     # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
+    #     print(f"An error occurred during the request: {e}")
+    # except Exception as e:
+    #     print(f"An unexpected error occurred: {e}")
+    # if response:
+    #     print(f"Status Code: {response.status_code}")
+    # return response.status_code
 
 
 def check_for_new_activity_urls():
