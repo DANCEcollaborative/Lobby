@@ -388,11 +388,11 @@ def request_session_update_users(room):
         print("request_session_update_users: POST successful", flush=True)
     except RequestException as e:
         # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
-        print(f"An error occurred during the request: {e}")
+        print(f"request_session_update_users: An error occurred during the request: {e}")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"request_session_update_users: An unexpected error occurred: {e}")
     if response:
-        print(f"Status Code: {response.status_code}")
+        print(f"request_session_update_users: response code: {response.status_code}")
 
 
 # TODO: Check if assignment request chain fails and react accordingly
@@ -436,11 +436,11 @@ def request_session_plus_users(room):
         print("request_session_plus_users: POST successful", flush=True)
     except RequestException as e:
         # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
-        print(f"An error occurred during the request: {e}")
+        print(f"request_session_plus_users: An error occurred during the request: {e}")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"request_session_plus_users: An unexpected error occurred: {e}")
     if response:
-        print(f"Status Code: {response.status_code}")
+        print(f"request_session_plus_users: response Code: {response.status_code}")
 
 
 def request_user(user, room):
@@ -485,7 +485,7 @@ def request_room_status(room):
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + SESSION_READINESS_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
                       "-" + room.room_name
-        # print("request_room_status -- request_url: " + request_url, flush=True)
+        print("request_room_status -- request_url: " + request_url, flush=True)
     response = None
     try:
         response = requests.get(request_url)
@@ -496,10 +496,10 @@ def request_room_status(room):
     except Exception as e:
         print(f"request_room_status: An unexpected error occurred: {e}")
     if response:
-        print(f"request_room_status - status Code: {response.status_code}")
+        print(f"request_room_status: response Code: {response.status_code}")
 
     if response.status_code == 200:
-        print("request_room_status -- k8s response code " + str(response.status_code), flush=True)
+        print("request_room_status: response code " + str(response.status_code), flush=True)
         response_data = response.text
         print("request_room_status -- URL: " + str(response_data), flush=True)
         url_response_code = check_url(response_data)
@@ -517,21 +517,22 @@ def request_room_status(room):
 
 
 def check_url(response_data):
-    url_response = requests.get(response_data)
-    return url_response.status_code
-    # response = None
-    # try:
-    #     response = requests.get(response_data)
-    #     response.raise_for_status()
-    #     print("request_session_update_users: POST successful", flush=True)
-    # except RequestException as e:
-    #     # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
-    #     print(f"An error occurred during the request: {e}")
-    # except Exception as e:
-    #     print(f"An unexpected error occurred: {e}")
-    # if response:
-    #     print(f"Status Code: {response.status_code}")
-    # return response.status_code
+    # url_response = requests.get(response_data)
+    # return url_response.status_code
+    print(f"check_url - incoming response_data: {response_data}", flush=True)
+    response = None
+    try:
+        response = requests.get(response_data)
+        response.raise_for_status()
+        print("check_url: POST successful", flush=True)
+    except RequestException as e:
+        # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
+        print(f"check_url:  An error occurred during the request: {e}")
+    except Exception as e:
+        print(f"check_url:  An unexpected error occurred: {e}")
+    if response:
+        print(f"check_url:  Status Code: {response.status_code}")
+    return response.status_code
 
 
 def check_for_new_activity_urls():
