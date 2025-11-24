@@ -517,8 +517,6 @@ def request_room_status(room):
 
 
 def check_url(response_data):
-    # url_response = requests.get(response_data)
-    # return url_response.status_code
     print(f"check_url - incoming response_data: {response_data}", flush=True)
     response = None
     try:
