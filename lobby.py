@@ -118,6 +118,7 @@ class User(lobby_db.Model):
     room_name = lobby_db.Column(lobby_db.VARCHAR(80))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
     activity_url = lobby_db.Column(lobby_db.String(200), primary_key=False)
+    activity_url_extended = lobby_db.Column(lobby_db.String(250), primary_key=False)
     activity_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
     ope_namespace = NAMESPACE
     agent = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
@@ -209,13 +210,18 @@ def getJupyterlabUrl():
     # print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
-        print("getJupyterlabUrl: code 200; returning URL: " + current_user.url, flush=True)
-        return current_user.url
+        current_user.activity_url_extended = extend_user_url(current_user)
+        print("getJupyterlabUrl: code 200; returning URL: " + current_user.activity_url_extended, flush=True)
+        return current_user.activity_url_extended
     else:
         print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
         response = make_response('', current_user.code)
         return response
 
+def extend_user_url(user):
+    return user.url + \
+        "&email=" + user.email + \
+        "&activity_id=" + user.activity_id
 
 @app.route('/targetUsers/<target_users>', methods=['PUT'])
 def targetUsers(target_users):
@@ -942,11 +948,11 @@ def assigner():
 
                     # If user has previously logged in and received an activity URL, just send it
                     if user.activity_url is not None:
-                        print("assigner: resending activity_url to user " + str(user_id) +
-                              " -- activity_url: " + user.activity_url, flush=True)
+                        print("assigner: resending extended activity_url to user " + str(user_id) +
+                              " -- URL: " + user.activity_url_extended, flush=True)
                         user_thread = threadMapping[user.thread_name]
                         user_thread.code = 200
-                        user_thread.url = user.activity_url
+                        user_thread.url = user.activity_url_extended
                         user_event = eventMapping[user.event_name]
                         users_to_notify.append(user_event)
 
