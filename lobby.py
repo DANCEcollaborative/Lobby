@@ -210,18 +210,12 @@ def getJupyterlabUrl():
     # print("getJupyterlabUrl: returned from 'event.wait()'", flush=True)
 
     if current_user.code == 200:
-        current_user.activity_url_extended = extend_user_url(current_user)
-        print("getJupyterlabUrl: code 200; returning URL: " + current_user.activity_url_extended, flush=True)
-        return current_user.activity_url_extended
+        print("getJupyterlabUrl: code 200; returning URL: " + current_user.url, flush=True)
+        return current_user.url
     else:
         print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
         response = make_response('', current_user.code)
         return response
-
-def extend_user_url(user):
-    return user.url + \
-        "&email=" + user.email + \
-        "&activity_id=" + user.activity_id
 
 @app.route('/targetUsers/<target_users>', methods=['PUT'])
 def targetUsers(target_users):
@@ -575,13 +569,20 @@ def assign_users_activity_url(room):
         return
     for user in users:
         user.activity_url = activity_url
-        print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+        user.activity_url_extended = extend_user_url(user,activity_url)
+        print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url_extended, flush=True)
         session.add(user)
         user_thread = threadMapping[user.thread_name]
         user_thread.code = 200
-        user_thread.url = activity_url
+        user_thread.url = user.activity_url_extended
         user_event = eventMapping[user.event_name]
         users_to_notify.append(user_event)
+
+
+def extend_user_url(user, activity_url):
+    return activity_url + \
+        "&email=" + user.email + \
+        "&activity_id=" + user.activity_id
 
 
 def email_to_dns(email):
