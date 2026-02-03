@@ -582,7 +582,7 @@ def assign_users_activity_url(room):
 def extend_user_url(user, activity_url):
     return activity_url + \
         "&email=" + user.email + \
-        "&activity_id=" + user.activity_id
+        "&activity_id=" + user.module_slug
 
 
 def email_to_dns(email):
