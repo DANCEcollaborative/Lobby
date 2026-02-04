@@ -760,9 +760,11 @@ def assign_room(user, room, is_room_new):
         request_user(user, room)
         if room.activity_url is not None:
             user.activity_url = room.activity_url
+            user.activity_url_extended = extend_user_url(user, activity_url)
             user_thread = threadMapping[user.thread_name]
             user_thread.code = 200
-            user_thread.url = user.activity_url
+            # user_thread.url = user.activity_url
+            user_thread.url = user.activity_url_extended
             user_event = eventMapping[user.event_name]
             users_to_notify.append(user_event)
         request_session_update_users(room)
