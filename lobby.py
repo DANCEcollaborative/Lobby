@@ -118,6 +118,7 @@ class User(lobby_db.Model):
     room_name = lobby_db.Column(lobby_db.VARCHAR(80))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
     activity_url = lobby_db.Column(lobby_db.String(200), primary_key=False)
+    activity_url_extended = lobby_db.Column(lobby_db.String(250), primary_key=False)
     activity_url_notified = lobby_db.Column(lobby_db.Boolean, primary_key=False)
     ope_namespace = NAMESPACE
     agent = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
@@ -215,7 +216,6 @@ def getJupyterlabUrl():
         print("getJupyterlabUrl: returning negative code: " + str(current_user.code), flush=True)
         response = make_response('', current_user.code)
         return response
-
 
 @app.route('/targetUsers/<target_users>', methods=['PUT'])
 def targetUsers(target_users):
@@ -569,13 +569,20 @@ def assign_users_activity_url(room):
         return
     for user in users:
         user.activity_url = activity_url
-        print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url, flush=True)
+        user.activity_url_extended = extend_user_url(user,activity_url)
+        print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url_extended, flush=True)
         session.add(user)
         user_thread = threadMapping[user.thread_name]
         user_thread.code = 200
-        user_thread.url = activity_url
+        user_thread.url = user.activity_url_extended
         user_event = eventMapping[user.event_name]
         users_to_notify.append(user_event)
+
+
+def extend_user_url(user, activity_url):
+    return activity_url + \
+        "&email=" + user.email + \
+        "&activity_id=" + user.module_slug
 
 
 def email_to_dns(email):
@@ -753,9 +760,11 @@ def assign_room(user, room, is_room_new):
         request_user(user, room)
         if room.activity_url is not None:
             user.activity_url = room.activity_url
+            user.activity_url_extended = extend_user_url(user, user.activity_url)
             user_thread = threadMapping[user.thread_name]
             user_thread.code = 200
-            user_thread.url = user.activity_url
+            # user_thread.url = user.activity_url
+            user_thread.url = user.activity_url_extended
             user_event = eventMapping[user.event_name]
             users_to_notify.append(user_event)
         request_session_update_users(room)
@@ -942,11 +951,11 @@ def assigner():
 
                     # If user has previously logged in and received an activity URL, just send it
                     if user.activity_url is not None:
-                        print("assigner: resending activity_url to user " + str(user_id) +
-                              " -- activity_url: " + user.activity_url, flush=True)
+                        print("assigner: resending extended activity_url to user " + str(user_id) +
+                              " -- URL: " + user.activity_url_extended, flush=True)
                         user_thread = threadMapping[user.thread_name]
                         user_thread.code = 200
-                        user_thread.url = user.activity_url
+                        user_thread.url = user.activity_url_extended
                         user_event = eventMapping[user.event_name]
                         users_to_notify.append(user_event)
 
