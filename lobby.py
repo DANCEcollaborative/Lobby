@@ -498,7 +498,7 @@ def request_room_status(room):
     if response:
         print(f"request_room_status: response Code: {response.status_code}")
 
-    if response.status_code == 200:
+    if response and response.status_code == 200:
         print("request_room_status: response code " + str(response.status_code), flush=True)
         response_data = response.text
         print("request_room_status -- URL: " + str(response_data), flush=True)
@@ -510,8 +510,12 @@ def request_room_status(room):
             print("request_room_status check_url response code NOT ok: " + str(url_response_code), flush=True)
             return None
     else:
-        print("request_room_status failed -- response code " + str(response.status_code), flush=True)
-        return None
+        if response:
+            print("request_room_status failed -- response code " + str(response.status_code), flush=True)
+            return None
+        else:
+            print("request_room_status failed", flush=True)
+            return None
 
 
 
