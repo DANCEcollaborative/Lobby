@@ -44,9 +44,10 @@ SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
-NOTIFY_DATABASE = False                           # Whether to tell activity_server about room assignments
-DATABASE_SERVER = 'bazaar.lti.cs.cmu.edu'         # Activity server URL
 MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
+NOTIFY_DATABASE = False                           # Whether to tell activity_server about room assignments
+DATABASE_SERVER = 'https://bazaar.lti.cs.cmu.edu'         # Activity server URL
+DATABASE_ROOM_PATH = 'api/user/room'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
@@ -380,7 +381,8 @@ def help():
 
 
 def request_session_update_users(room):
-    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
+    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE,
+    NOTIFY_DATABASE
     # print("request_session_update_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
@@ -419,12 +421,18 @@ def request_session_update_users(room):
         print(f"request_session_update_users: An unexpected error occurred: {e}")
     if response:
         print(f"request_session_update_users: response code: {response.status_code}")
+    if response.status_code == 200 and NOTIFY_DATABASE:
+        i = 0
+        while i < room.num_users:
+            user = room.users[i]
+            send_user_room_to_db(user, room)
+            i += 1
 
 
 # TODO: Check if assignment request chain fails and react accordingly
 def request_session_plus_users(room):
     global REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
-        LOCAL_TIME_ZONE, session
+        LOCAL_TIME_ZONE, session, NOTIFY_DATABASE
     request_url = REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
     start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
@@ -467,10 +475,16 @@ def request_session_plus_users(room):
         print(f"request_session_plus_users: An unexpected error occurred: {e}")
     if response:
         print(f"request_session_plus_users: response Code: {response.status_code}")
+    if response.status_code == 200 and NOTIFY_DATABASE:
+        i = 0
+        while i < room.num_users:
+            user = room.users[i]
+            send_user_room_to_db(user, room)
+            i += 1
 
 
 def request_user(user, room):
-    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG, REQUEST_PREFIX
+    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG, REQUEST_PREFIX, NOTIFY_DATABASE
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
                       email_to_dns(user.email)
@@ -492,6 +506,41 @@ def request_user(user, room):
         }
     print("request_user -- data as string: " + str(data), flush=True)
     headers = {'Content-Type': 'application/json'}
+    response = None
+    try:
+        response = requests.post(request_url, data=json.dumps(data), headers=headers)
+        response.raise_for_status()
+        print("request_user: POST successful", flush=True)
+    except RequestException as e:
+        # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
+        print(f"An error occurred during the request: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    if response:
+        print(f"Status Code: {response.status_code}")
+    if response.status_code == 200 and NOTIFY_DATABASE:
+        send_user_room_to_db(user, room)
+
+
+def send_user_room_to_db(user, room):
+    global DATABASE_SERVER, DATABASE_ROOM_PATH, MODULE_SLUG
+    # with app.app_context():
+    #     request_url = DATABASE_SERVER + "/" + DATABASE_ROOM_PATH + \
+    #         "?activity_id=" + MODULE_SLUG + \
+    #         "?email=" + user.email + \
+    #         "?room_name=" + room.room_name 
+    #         # "?email=" + email_to_dns(user.email)
+    #     print("send_user_room_to_db -- request_url: " + request_url, flush=True)
+    request_url = DATABASE_SERVER + "/" + DATABASE_ROOM_PATH
+    data = {
+        "activity_id": MODULE_SLUG,
+        "email": user.email,
+        "room_name": room.room_name
+    }
+    headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    }   
     response = None
     try:
         response = requests.post(request_url, data=json.dumps(data), headers=headers)
