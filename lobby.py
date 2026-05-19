@@ -44,6 +44,8 @@ SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
+NOTIFY_DATABASE = False                           # Whether to tell activity_server about room assignments
+DATABASE_SERVER = 'bazaar.lti.cs.cmu.edu'         # Activity server URL
 MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
@@ -317,6 +319,28 @@ def moduleSlug(module_slug):
     return "OK", 200
 
 
+@app.route('/notifyDB/<true/false>', methods=['PUT'])
+def notifyDB(notify_db):
+    global NOTIFY_DATABASE
+    if (notify_db == 'true') or (notify_db == 'True') or (notify_db == 'TRUE') or (notify_db == 't') or (notify_db == 'T'):
+        NOTIFY_DATABASE = True
+    else:
+        NOTIFY_DATABASE = False
+    if NOTIFY_DATABASE == True:
+        print("notifyDB = True", flush=True)
+    else:
+        print("notifyDB = False", flush=True)
+    return "OK", 200
+
+
+@app.route('/dbServer/<db_server>', methods=['PUT'])
+def dbServer(db_server):
+    global DATABASE_SERVER
+    DATABASE_SERVER = db_server
+    print("dbServer = " + db_server, flush=True)
+    return "OK", 200
+
+
 @app.route('/printRooms', methods=['PUT'])
 def printRooms():
     print("printRooms:", flush=True)
@@ -328,13 +352,14 @@ def printRooms():
     return Response(responseValue, status=200, mimetype='text/plain')
 
  
-@app.route('/printValues', methods=['PUT'])
-def printValues():
+@app.route('/help', methods=['PUT'])
+def help():
     global MODULE_SLUG, REQUEST_PREFIX, MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT, \
         MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
         MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum, NAMESPACE
     responseValue = (
-        f"\nTarget Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
+        f"Help - help\n"
+        f"\nTarget Users - targetUsers:           {str(TARGET_USERS_PER_ROOM)}\n"
         f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
         f"Max Users - maxUsers:                   {str(MAX_USERS_PER_ROOM)}\n" 
         f"Suboptimal assign wait - subAssignWait: {str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT)}\n"
@@ -346,8 +371,9 @@ def printValues():
         f"Delete Room - deleteRoom:               CAUTION\n" 
         f"Delete Room - deleteUser:               CAUTION\n" 
         f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
-        f"Print Rooms - printRooms\n"
-        f"Print Parameters - printValues\n\n"
+        f"Notify Database - notifyDB:             {str(NOTIFY_DATABASE)}\n"
+        f"Database Server - dbServer:             {DATABASE_SERVER}\n"
+        f"Print Rooms - printRooms\n\n"
     )
     print(responseValue, flush=True)
     return Response(responseValue, status=200, mimetype="text/plain")
@@ -518,8 +544,6 @@ def request_room_status(room):
             return None
 
 
-
-
 def check_url(response_data):
     print(f"check_url - incoming response_data: {response_data}", flush=True)
     response = None
@@ -566,6 +590,7 @@ def check_for_new_activity_urls():
 def assign_users_activity_url(room):
     global session, users_to_notify, threadMapping
     activity_url = room.activity_url
+    room_name = room.room_name
     if activity_url is not None:
         users = room.users
     else:
@@ -573,7 +598,7 @@ def assign_users_activity_url(room):
         return
     for user in users:
         user.activity_url = activity_url
-        user.activity_url_extended = extend_user_url(user,activity_url)
+        user.activity_url_extended = extend_user_url(user,activity_url,room_name)
         print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url_extended, flush=True)
         session.add(user)
         user_thread = threadMapping[user.thread_name]
@@ -583,10 +608,11 @@ def assign_users_activity_url(room):
         users_to_notify.append(user_event)
 
 
-def extend_user_url(user, activity_url):
+def extend_user_url(user, activity_url, room_name):
     return activity_url + \
         "&email=" + user.email + \
-        "&activity_id=" + user.module_slug
+        "&activity_id=" + user.module_slug + \
+        "&room_name=" + room_name
 
 
 def email_to_dns(email):
@@ -885,7 +911,7 @@ def print_room_assignments():
         created_rooms = Room.query.all()
         if len(created_rooms) > 0:
             for room in created_rooms:
-                print("Room " + str(room.room_name) + " - num_users: " + str(room.num_users), flush=True)
+                print("\nRoom " + str(room.room_name) + " - num_users: " + str(room.num_users), flush=True)
                 for user in room.users:
                     print("   " + user.user_id, flush=True)
         else:
