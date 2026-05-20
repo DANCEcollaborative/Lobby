@@ -280,7 +280,7 @@ def maxRoomAge(max_age):
 def requestPrefix(request_prefix):
     global REQUEST_PREFIX
     REQUEST_PREFIX = unquote(request_prefix)
-    print("requestPrefix: request_prefix = " + request_prefix, flush=True)
+    print("requestPrefix: request_prefix = " + unquote(request_prefix), flush=True)
     return "OK", 200
 
 
@@ -338,7 +338,7 @@ def notifyDB(notify_db):
 def dbServer(db_server):
     global DATABASE_SERVER
     DATABASE_SERVER = unquote(db_server)
-    print("dbServer = " + db_server, flush=True)
+    print("dbServer = " + unquote(db_server), flush=True)
     return "OK", 200
 
 
@@ -980,13 +980,13 @@ def print_users():
 
 def print_http_request(request):
     print("\n==== HTTP Request ====\n")
-    print(f"{req.method} {req.path_url} HTTP/1.1")
-    for key, value in req.headers.items():
+    print(f"{request.method} {req.path_url} HTTP/1.1")
+    for key, value in request.headers.items():
         print(f"{key}: {value}")
-    print()  # Blank line 
-    # 3. Print the Body (decode from bytes if necessary)
-    if req.body:
-        body = req.body
+    # print()  # Blank line 
+    # Print the Body (decode from bytes if necessary)
+    if request.body:
+        body = request.body
         if isinstance(body, bytes):
             body = body.decode("utf-8")
         print(body)
