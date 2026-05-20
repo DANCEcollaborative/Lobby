@@ -381,8 +381,7 @@ def help():
 
 
 def request_session_update_users(room):
-    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE,
-    NOTIFY_DATABASE
+    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE, NOTIFY_DATABASE
     # print("request_session_update_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
