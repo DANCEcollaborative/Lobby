@@ -980,7 +980,7 @@ def print_users():
 
 def print_http_request(request):
     print("\n==== HTTP Request ====\n")
-    print(f"{request.method} {req.path_url} HTTP/1.1")
+    print(f"{request.method} {request.path_url} HTTP/1.1")
     for key, value in request.headers.items():
         print(f"{key}: {value}")
     # print()  # Blank line 
