@@ -359,8 +359,8 @@ def help():
         MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
         MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum, NAMESPACE
     responseValue = (
-        f"Help - help\n"
-        f"\nTarget Users - targetUsers:           {str(TARGET_USERS_PER_ROOM)}\n"
+        f"\n\nHelp - help\n"
+        f"Target Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
         f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
         f"Max Users - maxUsers:                   {str(MAX_USERS_PER_ROOM)}\n" 
         f"Suboptimal assign wait - subAssignWait: {str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT)}\n"
@@ -369,11 +369,11 @@ def help():
         f"Max room assign age - maxRoomAge:       {str(MAX_ROOM_AGE_FOR_NEW_USERS)}\n"
         f"Request Prefix - requestPrefix:         {REQUEST_PREFIX}\n"
         f"Namespace - namespace:                  {NAMESPACE}\n"
-        f"Delete Room - deleteRoom:               CAUTION\n" 
-        f"Delete Room - deleteUser:               CAUTION\n" 
         f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
         f"Notify Database - notifyDB:             {str(NOTIFY_DATABASE)}\n"
         f"Database Server - dbServer:             {DATABASE_SERVER}\n"
+        f"Delete Room - deleteRoom:               CAUTION\n" 
+        f"Delete Room - deleteUser:               CAUTION\n" 
         f"Print Rooms - printRooms\n\n"
     )
     print(responseValue, flush=True)
