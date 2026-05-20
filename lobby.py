@@ -359,7 +359,7 @@ def help():
         MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
         MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum, NAMESPACE
     responseValue = (
-        f"\nSETTING - PARAMETER                   VALUE\n"
+        f"\nSETTING - PARAMETER                     VALUE\n"
         f"Help - help\n"
         f"Target Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
         f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
@@ -544,6 +544,7 @@ def send_user_room_to_db(user, room):
     response = None
     try:
         response = requests.post(request_url, data=json.dumps(data), headers=headers)
+        print_http_request(response.request)
         response.raise_for_status()
         print("request_user: POST successful", flush=True)
     except RequestException as e:
@@ -975,6 +976,21 @@ def print_users():
                 print("User: " + str(user.user_id), flush=True)
         else:
             print("No rooms yet", flush=True)
+
+
+def print_http_request(request):
+    print("\n==== HTTP Request ====\n")
+    print(f"{req.method} {req.path_url} HTTP/1.1")
+    for key, value in req.headers.items():
+        print(f"{key}: {value}")
+    print()  # Blank line 
+    # 3. Print the Body (decode from bytes if necessary)
+    if req.body:
+        body = req.body
+        if isinstance(body, bytes):
+            body = body.decode("utf-8")
+        print(body)
+    print("\n==== HTTP Request ====\n")
 
 
 def initialize_lobby():
