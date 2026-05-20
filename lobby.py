@@ -320,7 +320,7 @@ def moduleSlug(module_slug):
     return "OK", 200
 
 
-@app.route('/notifyDB/<true/false>', methods=['PUT'])
+@app.route('/notifyDB/<true_or_false>', methods=['PUT'])
 def notifyDB(notify_db):
     global NOTIFY_DATABASE
     if (notify_db == 'true') or (notify_db == 'True') or (notify_db == 'TRUE') or (notify_db == 't') or (notify_db == 'T'):
