@@ -337,7 +337,7 @@ def notifyDB(notify_db):
 @app.route('/dbServer/<db_server>', methods=['PUT'])
 def dbServer(db_server):
     global DATABASE_SERVER
-    DATABASE_SERVER = db_server
+    DATABASE_SERVER = unquote(db_server)
     print("dbServer = " + db_server, flush=True)
     return "OK", 200
 
