@@ -359,7 +359,8 @@ def help():
         MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
         MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum, NAMESPACE
     responseValue = (
-        f"\n\nHelp - help\n"
+        f"\nSETTING - PARAMETER                   VALUE\n"
+        f"Help - help\n"
         f"Target Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
         f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
         f"Max Users - maxUsers:                   {str(MAX_USERS_PER_ROOM)}\n" 
