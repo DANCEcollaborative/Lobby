@@ -45,6 +45,9 @@ SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
 MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
+NOTIFY_DATABASE = False                           # Whether to tell activity_server about room assignments
+DATABASE_SERVER = 'https://bazaar.lti.cs.cmu.edu'         # Activity server URL
+DATABASE_ROOM_PATH = 'api/user/room'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
@@ -277,7 +280,7 @@ def maxRoomAge(max_age):
 def requestPrefix(request_prefix):
     global REQUEST_PREFIX
     REQUEST_PREFIX = unquote(request_prefix)
-    print("requestPrefix: request_prefix = " + request_prefix, flush=True)
+    print("requestPrefix: request_prefix = " + unquote(request_prefix), flush=True)
     return "OK", 200
 
 
@@ -317,6 +320,28 @@ def moduleSlug(module_slug):
     return "OK", 200
 
 
+@app.route('/notifyDB/<notify_db>', methods=['PUT'])
+def notifyDB(notify_db):
+    global NOTIFY_DATABASE
+    if (notify_db == 'true') or (notify_db == 'True') or (notify_db == 'TRUE') or (notify_db == 't') or (notify_db == 'T'):
+        NOTIFY_DATABASE = True
+    else:
+        NOTIFY_DATABASE = False
+    if NOTIFY_DATABASE == True:
+        print("notifyDB = True", flush=True)
+    else:
+        print("notifyDB = False", flush=True)
+    return "OK", 200
+
+
+@app.route('/dbServer/<db_server>', methods=['PUT'])
+def dbServer(db_server):
+    global DATABASE_SERVER
+    DATABASE_SERVER = unquote(db_server)
+    print("dbServer = " + unquote(db_server), flush=True)
+    return "OK", 200
+
+
 @app.route('/printRooms', methods=['PUT'])
 def printRooms():
     print("printRooms:", flush=True)
@@ -328,13 +353,15 @@ def printRooms():
     return Response(responseValue, status=200, mimetype='text/plain')
 
  
-@app.route('/printValues', methods=['PUT'])
-def printValues():
+@app.route('/help', methods=['PUT'])
+def help():
     global MODULE_SLUG, REQUEST_PREFIX, MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT, \
         MAX_WAIT_TIME_UNTIL_GIVE_UP, MAX_ROOM_AGE_FOR_NEW_USERS, MAX_USERS_PER_ROOM, \
         MIN_USERS_PER_ROOM, TARGET_USERS_PER_ROOM, nextRoomNum, NAMESPACE
     responseValue = (
-        f"\nTarget Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
+        f"\nSETTING - PARAMETER                     VALUE\n"
+        f"Help - help\n"
+        f"Target Users - targetUsers:             {str(TARGET_USERS_PER_ROOM)}\n"
         f"Min Users - minUsers:                   {str(MIN_USERS_PER_ROOM)}\n"
         f"Max Users - maxUsers:                   {str(MAX_USERS_PER_ROOM)}\n" 
         f"Suboptimal assign wait - subAssignWait: {str(MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT)}\n"
@@ -343,18 +370,19 @@ def printValues():
         f"Max room assign age - maxRoomAge:       {str(MAX_ROOM_AGE_FOR_NEW_USERS)}\n"
         f"Request Prefix - requestPrefix:         {REQUEST_PREFIX}\n"
         f"Namespace - namespace:                  {NAMESPACE}\n"
+        f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
+        f"Notify Database - notifyDB:             {str(NOTIFY_DATABASE)}\n"
+        f"Database Server - dbServer:             {DATABASE_SERVER}\n"
         f"Delete Room - deleteRoom:               CAUTION\n" 
         f"Delete Room - deleteUser:               CAUTION\n" 
-        f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
-        f"Print Rooms - printRooms\n"
-        f"Print Parameters - printValues\n\n"
+        f"Print Rooms - printRooms\n\n"
     )
     print(responseValue, flush=True)
     return Response(responseValue, status=200, mimetype="text/plain")
 
 
 def request_session_update_users(room):
-    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE
+    global REQUEST_PREFIX, SESSION_ONLY_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, LOCAL_TIME_ZONE, NOTIFY_DATABASE
     # print("request_session_update_users -- request_url: " + request_url, flush=True)
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + SESSION_ONLY_REQUEST_PATH + "/" + NAMESPACE + "/" + MODULE_SLUG + \
@@ -393,12 +421,18 @@ def request_session_update_users(room):
         print(f"request_session_update_users: An unexpected error occurred: {e}")
     if response:
         print(f"request_session_update_users: response code: {response.status_code}")
+    if response.status_code == 200 and NOTIFY_DATABASE:
+        i = 0
+        while i < room.num_users:
+            user = room.users[i]
+            send_user_room_to_db(user, room)
+            i += 1
 
 
 # TODO: Check if assignment request chain fails and react accordingly
 def request_session_plus_users(room):
     global REQUEST_PREFIX, SESSION_PLUS_USERS_REQUEST_PATH, MODULE_SLUG, NAMESPACE, OPE_BOT_USERNAME, \
-        LOCAL_TIME_ZONE, session
+        LOCAL_TIME_ZONE, session, NOTIFY_DATABASE
     request_url = REQUEST_PREFIX + "/" + SESSION_PLUS_USERS_REQUEST_PATH
     print("request_session_plus_users -- request_url: " + request_url, flush=True)
     start_time = datetime.now(LOCAL_TIME_ZONE).replace(microsecond=0).isoformat()
@@ -441,10 +475,16 @@ def request_session_plus_users(room):
         print(f"request_session_plus_users: An unexpected error occurred: {e}")
     if response:
         print(f"request_session_plus_users: response Code: {response.status_code}")
+    if response.status_code == 200 and NOTIFY_DATABASE:
+        i = 0
+        while i < room.num_users:
+            user = room.users[i]
+            send_user_room_to_db(user, room)
+            i += 1
 
 
 def request_user(user, room):
-    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG, REQUEST_PREFIX
+    global USER_REQUEST_PATH, NAMESPACE, MODULE_SLUG, REQUEST_PREFIX, NOTIFY_DATABASE
     with app.app_context():
         request_url = REQUEST_PREFIX + "/" + USER_REQUEST_PATH + "/" + NAMESPACE + "/" + \
                       email_to_dns(user.email)
@@ -469,6 +509,42 @@ def request_user(user, room):
     response = None
     try:
         response = requests.post(request_url, data=json.dumps(data), headers=headers)
+        response.raise_for_status()
+        print("request_user: POST successful", flush=True)
+    except RequestException as e:
+        # Catches any exception that the requests library might raise (e.g., ConnectionError, Timeout, HTTPError)
+        print(f"An error occurred during the request: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    if response:
+        print(f"Status Code: {response.status_code}")
+    if response.status_code == 200 and NOTIFY_DATABASE:
+        send_user_room_to_db(user, room)
+
+
+def send_user_room_to_db(user, room):
+    global DATABASE_SERVER, DATABASE_ROOM_PATH, MODULE_SLUG
+    # with app.app_context():
+    #     request_url = DATABASE_SERVER + "/" + DATABASE_ROOM_PATH + \
+    #         "?activity_id=" + MODULE_SLUG + \
+    #         "?email=" + user.email + \
+    #         "?room_name=" + room.room_name 
+    #         # "?email=" + email_to_dns(user.email)
+    #     print("send_user_room_to_db -- request_url: " + request_url, flush=True)
+    request_url = DATABASE_SERVER + "/" + DATABASE_ROOM_PATH
+    data = {
+        "activity_id": MODULE_SLUG,
+        "email": user.email,
+        "room_name": room.room_name
+    }
+    headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    }   
+    response = None
+    try:
+        response = requests.post(request_url, data=json.dumps(data), headers=headers)
+        print_http_request(response.request)
         response.raise_for_status()
         print("request_user: POST successful", flush=True)
     except RequestException as e:
@@ -518,8 +594,6 @@ def request_room_status(room):
             return None
 
 
-
-
 def check_url(response_data):
     print(f"check_url - incoming response_data: {response_data}", flush=True)
     response = None
@@ -566,6 +640,7 @@ def check_for_new_activity_urls():
 def assign_users_activity_url(room):
     global session, users_to_notify, threadMapping
     activity_url = room.activity_url
+    room_name = room.room_name
     if activity_url is not None:
         users = room.users
     else:
@@ -573,7 +648,7 @@ def assign_users_activity_url(room):
         return
     for user in users:
         user.activity_url = activity_url
-        user.activity_url_extended = extend_user_url(user,activity_url)
+        user.activity_url_extended = extend_user_url(user,activity_url,room_name)
         print("assign_users_activity_url: user: " + user.name + "  --   URL: " + user.activity_url_extended, flush=True)
         session.add(user)
         user_thread = threadMapping[user.thread_name]
@@ -583,10 +658,11 @@ def assign_users_activity_url(room):
         users_to_notify.append(user_event)
 
 
-def extend_user_url(user, activity_url):
+def extend_user_url(user, activity_url, room_name):
     return activity_url + \
         "&email=" + user.email + \
-        "&activity_id=" + user.module_slug
+        "&activity_id=" + user.module_slug + \
+        "&room_name=" + room_name
 
 
 def email_to_dns(email):
@@ -885,7 +961,7 @@ def print_room_assignments():
         created_rooms = Room.query.all()
         if len(created_rooms) > 0:
             for room in created_rooms:
-                print("Room " + str(room.room_name) + " - num_users: " + str(room.num_users), flush=True)
+                print("\nRoom " + str(room.room_name) + " - num_users: " + str(room.num_users), flush=True)
                 for user in room.users:
                     print("   " + user.user_id, flush=True)
         else:
@@ -900,6 +976,21 @@ def print_users():
                 print("User: " + str(user.user_id), flush=True)
         else:
             print("No rooms yet", flush=True)
+
+
+def print_http_request(request):
+    print("\n==== HTTP Request ====\n")
+    print(f"{request.method} {request.path_url} HTTP/1.1")
+    for key, value in request.headers.items():
+        print(f"{key}: {value}")
+    # print()  # Blank line 
+    # Print the Body (decode from bytes if necessary)
+    if request.body:
+        body = request.body
+        if isinstance(body, bytes):
+            body = body.decode("utf-8")
+        print(body)
+    print("\n==== HTTP Request ====\n")
 
 
 def initialize_lobby():
