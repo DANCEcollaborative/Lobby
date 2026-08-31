@@ -3,7 +3,7 @@
 A lobby for dynamically joining individual students into shared socket rooms. 
 
 # Parameters
-Configuration parameters are all currently located near the top of file **lobby.py**. Parameters can be hardcoded within **lobby.py**. Many parameters can also be updated dynamically using curl commands: `curl -X PUT <lobby server URL>/<dynamic parameter name (see below)>/<parameter value>`. Some commonly used dynamic parameter names with sample values are shown below. 
+Configuration parameters are all currently located near the top of file **lobby.py**, where tbey may be hardcoded . Many parameters can also be updated dynamically using curl commands formatted as follows: `curl -X PUT <lobby server URL>/<dynamic parameter name (see below)>/<parameter value>`. Some commonly used dynamic parameter names with sample values are shown below. 
 
 - **help** = (No parameter value.) Simply provides a key for updating Lobby parameters. 
 - **targetUsers** = 4 - Target/optimal # of users for room assignment
