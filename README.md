@@ -10,7 +10,7 @@ Configuration parameters are all currently located near the top of file **lobby.
 - **minUsers** = 2 - Min users for suboptimal room assignment
 - **maxUsers** = 5 - Max users per room 
 - **subassignWait** = 10 - After user waits N seconds, attempt suboptimal assignment
-- **roomNum** = 0 - The number after this will be the first room number assigned.
+- **roomNum** = 0 - The next room number that will be assigned.
 - **giveUpWait** = 300 - Max seconds before giving up on assigning user to a room
 - **maxRoomAge** = 600 - Max room age (sec) after which no longer acccept new users
 - **requestPrefix** = The URL of the server from which the Lobby is requesting a session. 
