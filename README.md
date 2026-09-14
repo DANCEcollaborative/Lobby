@@ -14,8 +14,7 @@ Configuration parameters are all currently located near the top of file **lobby.
 - **giveUpWait** = 300 - Max seconds before giving up on assigning user to a room
 - **maxRoomAge** = 600 - Max room age (sec) after which no longer acccept new users
 - **requestPrefix** = The URL of the server from which the Lobby is requesting a session. 
-- **moduleSlug** - An identifier for the specific content requested from the server. 
-- **roomPrefix** = "room" # A prefix for each room number.
+- **moduleSlug** - An identifier for the specific content requested from the server.
 
 # To run
 
