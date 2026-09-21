@@ -475,12 +475,12 @@ def request_session_plus_users(room):
         print(f"request_session_plus_users: An unexpected error occurred: {e}")
     if response:
         print(f"request_session_plus_users: response Code: {response.status_code}")
-    if response.status_code == 200 and NOTIFY_DATABASE:
-        i = 0
-        while i < room.num_users:
-            user = room.users[i]
-            send_user_room_to_db(user, room)
-            i += 1
+        if response.status_code == 200 and NOTIFY_DATABASE:
+            i = 0
+            while i < room.num_users:
+                user = room.users[i]
+                send_user_room_to_db(user, room)
+                i += 1
 
 
 def request_user(user, room):
