@@ -1,4 +1,5 @@
 import os
+from runtime_settings import setting, next_room_number, save_next_room_number
 import time
 from datetime import datetime
 import pytz
@@ -16,16 +17,16 @@ import io
 from contextlib import redirect_stdout
 
 # ROOM ALLOCATION CONSTANTS
-TARGET_USERS_PER_ROOM = 3
-MIN_USERS_PER_ROOM = 1
-MAX_USERS_PER_ROOM = 4
-FILL_ROOMS_UNDER_TARGET = True
-OVERFILL_ROOMS = True
+TARGET_USERS_PER_ROOM = setting("TARGET_USERS_PER_ROOM", 3)
+MIN_USERS_PER_ROOM = setting("MIN_USERS_PER_ROOM", 1)
+MAX_USERS_PER_ROOM = setting("MAX_USERS_PER_ROOM", 4)
+FILL_ROOMS_UNDER_TARGET = setting("FILL_ROOMS_UNDER_TARGET", True)
+OVERFILL_ROOMS = setting("OVERFILL_ROOMS", True)
 
 # TIME CONSTANTS -- all in seconds
-MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = 5
-MAX_WAIT_TIME_UNTIL_GIVE_UP = 5 * 60
-MAX_ROOM_AGE_FOR_NEW_USERS = 10 * 60
+MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT = setting("MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT", 5)
+MAX_WAIT_TIME_UNTIL_GIVE_UP = setting("MAX_WAIT_TIME_UNTIL_GIVE_UP", 5 * 60)
+MAX_ROOM_AGE_FOR_NEW_USERS = setting("MAX_ROOM_AGE_FOR_NEW_USERS", 10 * 60)
 ASSIGNER_SLEEP_TIME = 1
 ELAPSED_TIME_UNTIL_USER_DELETION = 120 * 60
 ELAPSED_TIME_UNTIL_ROOM_DELETION = 130 * 60
@@ -37,24 +38,24 @@ OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
 OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
 LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
 LOBBY_URL_PREFIX = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
-REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
+REQUEST_PREFIX = setting("REQUEST_PREFIX", 'https://ope.sailplatform.org/api/v1')
 ACTIVITY_URL_LINK_PREFIX = '<a href="'
 ACTIVITY_URL_LINK_SUFFIX = '">OPE Session</a>'
 SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
-MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
-NOTIFY_DATABASE = False                           # Whether to tell activity_server about room assignments
-DATABASE_SERVER = 'https://bazaar.lti.cs.cmu.edu'         # Activity server URL
+MODULE_SLUG = setting("MODULE_SLUG", 'ope-learn-domain-ana-smirstpv')     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
+NOTIFY_DATABASE = setting("NOTIFY_DATABASE", False)                           # Whether to tell activity_server about room assignments
+DATABASE_SERVER = setting("DATABASE_SERVER", 'https://bazaar.lti.cs.cmu.edu')         # Activity server URL
 DATABASE_ROOM_PATH = 'api/user/room'
-NAMESPACE = 'default'
+NAMESPACE = setting("NAMESPACE", 'default')
 ROOM_PREFIX = "room"
 TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 28000
+nextRoomNum = next_room_number(28000)
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -256,6 +257,7 @@ def subAssignWait(max_sub_assign):
 def roomNum(room_num):
     global nextRoomNum
     nextRoomNum = int(room_num)
+    save_next_room_number(nextRoomNum)
     print("roomNum: room_num = " + room_num, flush=True)
     return "OK", 200
 
@@ -817,6 +819,7 @@ def assign_new_room(num_users):
     room_name = ROOM_PREFIX + str(nextRoomNum)
     is_room_new = True
     nextRoomNum += 1
+    save_next_room_number(nextRoomNum)
 
     # print("assign_new_room -- str(num_users): " + str(num_users) + " -- room_name: " + room_name, flush=True)
 

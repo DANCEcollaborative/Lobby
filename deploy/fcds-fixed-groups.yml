@@ -1,0 +1,18 @@
+# Overlay for this Bree Lobby instance only. Match the existing Compose project.
+services:
+  web:
+    image: fcds-lobby:fixed-groups-20260923
+    environment:
+      LOBBY_TARGET_USERS_PER_ROOM: '3'
+      LOBBY_MIN_USERS_PER_ROOM: '1'
+      LOBBY_MAX_USERS_PER_ROOM: '3'
+      LOBBY_MAX_WAIT_TIME_FOR_SUBOPTIMAL_ASSIGNMENT: '60'
+      LOBBY_MAX_ROOM_AGE_FOR_NEW_USERS: '0'
+      LOBBY_REQUEST_PREFIX: https://collab.lti.cs.cmu.edu/api/v1
+      LOBBY_MODULE_SLUG: fcds-p2-26-fall-1a
+      LOBBY_NOTIFY_DATABASE: 'true'
+      LOBBY_DATABASE_SERVER: https://bree.lti.cs.cmu.edu
+      LOBBY_ROOM_NUMBER_FILE: /lobby-state/next-room-number
+      LOBBY_INITIAL_ROOM_NUMBER: '260911013'
+    volumes:
+      - /home/nkotalwa/fcds-lobby/state:/lobby-state

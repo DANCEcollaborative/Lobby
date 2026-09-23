@@ -1,0 +1,4 @@
+# Preserve the installed Lobby dependencies; only add the reviewed source changes.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+COPY lobby.py runtime_settings.py /lobby/
