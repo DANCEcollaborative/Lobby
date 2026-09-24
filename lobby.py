@@ -118,6 +118,7 @@ class User(lobby_db.Model):
     password = lobby_db.Column(lobby_db.String(100), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
+    participation_mode = lobby_db.Column(lobby_db.String(10), nullable=False, default='group')
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     room_name = lobby_db.Column(lobby_db.VARCHAR(80))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
@@ -137,6 +138,10 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, NAMESPACE
+    data = request.get_json(silent=True) or {}
+    participation_mode = data.get('participationMode', 'group') if MODULE_SLUG == 'fcds-p2-26-fall-1a' else 'group'
+    if participation_mode not in ('solo', 'group'):
+        return {'detail': 'Choose Work alone or Join a group.'}, 400
     print("getJupyterlabUrl: enter", flush=True)
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
@@ -147,7 +152,6 @@ def getJupyterlabUrl():
         current_user = threading.Thread()
         threadMapping[thread_name] = current_user
         current_user.event = event
-        data = json.loads(request.data.decode('utf-8'))
         print(f"getJupyterlabUrl -- data as string: {str(data)}", flush=True)
         name = data.get('name')
         email = data.get('email')
@@ -158,6 +162,12 @@ def getJupyterlabUrl():
               flush=True)
         with app.app_context():
             user = User.query.filter_by(user_id=user_id).first()
+
+            if user is not None and user.participation_mode != participation_mode:
+                eventMapping.pop(event_name, None)
+                threadMapping.pop(thread_name, None)
+                choice = 'Work alone' if user.participation_mode == 'solo' else 'Join a group'
+                return {'detail': 'You already started with ' + choice + '. Select that option to reopen your room. Contact course staff if you need a new room.'}, 409
 
             # If user is not new
             if user is not None:
@@ -177,6 +187,7 @@ def getJupyterlabUrl():
                         unassigned_users.remove(user)
                     user = User(user_id=user_id, name=name, email=email, password=password,
                                 entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
+                                participation_mode=participation_mode,
                                 activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                     session.add(user)
                     session.commit()
@@ -199,6 +210,7 @@ def getJupyterlabUrl():
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
+                                participation_mode=participation_mode,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                 session.add(user)
                 session.commit()
@@ -690,6 +702,11 @@ def is_duplicate_user(user_info, user):
 # TODO: Check if assignment request chain fails and react accordingly
 def assign_rooms():
     global unassigned_users, TARGET_USERS_PER_ROOM, MAX_USERS_PER_ROOM
+    # Solo users never enter the matching pool or wait for its timeout.
+    for user in list(unassigned_users):
+        if getattr(user, 'participation_mode', 'group') == 'solo':
+            unassigned_users.remove(user)
+            assign_new_room(1, selected_users=[user])
     num_unassigned_users = len(unassigned_users)
     if num_unassigned_users > 0:
 
@@ -700,6 +717,8 @@ def assign_rooms():
         # Fill rooms with the target number of users
         if num_unassigned_users >= TARGET_USERS_PER_ROOM:
             assign_new_rooms(TARGET_USERS_PER_ROOM)
+
+        num_unassigned_users = len(unassigned_users)
 
         # Check for any users waiting long enough that they should get a suboptimal assignment
         users_due_for_suboptimal = get_users_due_for_suboptimal()
@@ -786,6 +805,8 @@ def get_sorted_available_rooms(max_users):
                 print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         current_time = time.time()
         for room in sorted_rooms:
+            if any(getattr(user, 'participation_mode', 'group') == 'solo' for user in room.users):
+                continue
             if room.room_name != "waiting_room":
                 time_diff = current_time - room.start_time.timestamp()
                 # print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
@@ -813,7 +834,7 @@ def assign_new_rooms(num_users_per_room):
         assign_new_room(num_users_per_room)
 
 # TODO: Check if assignment request chain fails and react accordingly
-def assign_new_room(num_users):
+def assign_new_room(num_users, selected_users=None):
     global nextRoomNum, session
 
     room_name = ROOM_PREFIX + str(nextRoomNum)
@@ -828,7 +849,11 @@ def assign_new_room(num_users):
         session.add(room)
         session.commit()
         session = lobby_db.session
-        assign_up_to_n_users(room, num_users, is_room_new)
+        if selected_users is None:
+            assign_up_to_n_users(room, num_users, is_room_new)
+        else:
+            for user in selected_users:
+                assign_room(user, room, is_room_new)
         request_session_plus_users(room)
 
     # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)

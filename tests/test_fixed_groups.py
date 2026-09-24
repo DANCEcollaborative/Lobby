@@ -22,13 +22,33 @@ class GroupingTests(unittest.TestCase):
         tree=ast.parse(SOURCE.read_text());selected=ast.Module(body=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in FUNCTIONS],type_ignores=[])
         exec(compile(selected,str(SOURCE),'exec'),env)
         def assign(user,room,new):room.users.append(user)
-        def new_room(count):
+        def new_room(count, selected_users=None):
             room=types.SimpleNamespace(room_name='r'+str(len(rooms)),users=[],start_time=types.SimpleNamespace(timestamp=lambda t=clock[0]:t))
-            rooms.append(room);env['assign_up_to_n_users'](room,count,True)
+            rooms.append(room)
+            if selected_users is None:env['assign_up_to_n_users'](room,count,True)
+            else:room.users.extend(selected_users)
         env.update(assign_room=assign,assign_new_room=new_room)
-        def arrive(name):
-            env['unassigned_users'].append(types.SimpleNamespace(user_id=name,start_time=types.SimpleNamespace(timestamp=lambda t=clock[0]:t)))
+        def arrive(name, mode="group"):
+            env['unassigned_users'].append(types.SimpleNamespace(user_id=name,participation_mode=mode,start_time=types.SimpleNamespace(timestamp=lambda t=clock[0]:t)))
         return env,clock,rooms,arrive
+
+    def test_solo_skips_wait_and_is_never_matched_with_waiting_group(self):
+        env,clock,rooms,arrive=self.harness()
+        arrive('group');arrive('solo','solo');env['assign_rooms']()
+        self.assertEqual([[u.user_id for u in r.users] for r in rooms],[['solo']])
+        self.assertEqual([u.user_id for u in env['unassigned_users']],['group'])
+        clock[0]+=61;env['assign_rooms']()
+        self.assertEqual([[u.user_id for u in r.users] for r in rooms],[['solo'],['group']])
+
+    def test_two_solo_requests_remain_separate_from_a_full_group(self):
+        env,clock,rooms,arrive=self.harness()
+        for name,mode in [('A','group'),('S','solo'),('B','group'),('T','solo'),('C','group')]:arrive(name,mode)
+        env['assign_rooms']()
+        self.assertEqual([[u.user_id for u in r.users] for r in rooms],[['S'],['T'],['A','B','C']])
+        self.assertEqual(env['unassigned_users'],[])
+        env['MAX_ROOM_AGE_FOR_NEW_USERS']=600
+        arrive('late');env['assign_rooms']()
+        self.assertEqual([len(r.users) for r in rooms],[1,1,3])
 
     def test_four_arrivals_form_three_then_solo_after_wait(self):
         env,clock,rooms,arrive=self.harness()

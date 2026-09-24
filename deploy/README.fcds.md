@@ -22,3 +22,17 @@ Reconnection within a running service is tested separately.
 Run python3 -m unittest discover -s tests -v. These tests execute the production
 assignment functions with a controlled clock and rooms, avoiding import-time DB
 initialization. Live tests must use getJupyterlabUrl, not preassigned rooms.
+
+## Solo selection
+
+The sensor activity accepts `participationMode: "solo" | "group"` on
+`getJupyterlabUrl`. Missing mode preserves the group behavior for old clients.
+Solo users receive a new one-person room on the next allocator tick and are
+excluded from matching, including subsequent room filling. Group users retain
+1/3/3 limits and the 60-second wait. The choice is stored on the lobby User row;
+reconnects keep it, and conflicting choices return a helpful 409 instead of
+silently moving or combining an existing room. Other configured modules ignore
+the optional mode and retain group allocation.
+
+Deploy only with an empty lobby: the inherited startup recreates its tables,
+including the added `participation_mode` column. Keep the persisted room counter.
