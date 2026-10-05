@@ -17,7 +17,7 @@ from contextlib import redirect_stdout
 
 # ROOM ALLOCATION CONSTANTS
 TARGET_USERS_PER_ROOM = 3
-MIN_USERS_PER_ROOM = 1
+MIN_USERS_PER_ROOM = 2
 MAX_USERS_PER_ROOM = 4
 FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
@@ -42,7 +42,7 @@ SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
-MODULE_SLUG = 'fcds-p2-26-fall-1'                 
+MODULE_SLUG = 'fcds-p2-26-fall-1a'
 NOTIFY_DATABASE = True                           # Whether to tell activity_server about room assignments
 SOLO_CHOICE = True                               # Whether users get choice to go solo
 DATABASE_SERVER = 'https://bree.lti.cs.cmu.edu'         # Activity server URL
