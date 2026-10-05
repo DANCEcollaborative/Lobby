@@ -17,7 +17,7 @@ from contextlib import redirect_stdout
 
 # ROOM ALLOCATION CONSTANTS
 TARGET_USERS_PER_ROOM = 3
-MIN_USERS_PER_ROOM = 1
+MIN_USERS_PER_ROOM = 2
 MAX_USERS_PER_ROOM = 4
 FILL_ROOMS_UNDER_TARGET = True
 OVERFILL_ROOMS = True
@@ -36,17 +36,16 @@ CHECK_FOR_ROOM_DELETION_WAIT_TIME = 2 * 60
 OPE_BOT_NAME = 'bazaar-lti-at-cs-cmu-edu'
 OPE_BOT_USERNAME = 'bazaar-lti-cs-cmu-edu'
 LOCAL_TIME_ZONE = pytz.timezone('America/New_York')
-LOBBY_URL_PREFIX = 'http://bazaar.lti.cs.cmu.edu:5000/sail_lobby/'
-REQUEST_PREFIX = 'https://ope.sailplatform.org/api/v1'
+REQUEST_PREFIX = 'https://collab.lti.cs.cmu.edu/api/v1'
 ACTIVITY_URL_LINK_PREFIX = '<a href="'
-ACTIVITY_URL_LINK_SUFFIX = '">OPE Session</a>'
 SESSION_ONLY_REQUEST_PATH = 'opesessions'
 SESSION_PLUS_USERS_REQUEST_PATH = 'scheduleSession'
 USER_REQUEST_PATH = 'opeusers'
 SESSION_READINESS_PATH = 'sessionReadiness'
-MODULE_SLUG = 'ope-learn-domain-ana-smirstpv'     # Summer 2024 FCDS, "Pittsburgh" students, FcdsP3Agent
-NOTIFY_DATABASE = False                           # Whether to tell activity_server about room assignments
-DATABASE_SERVER = 'https://bazaar.lti.cs.cmu.edu'         # Activity server URL
+MODULE_SLUG = 'fcds-p2-26-fall-1a'
+NOTIFY_DATABASE = True                           # Whether to tell activity_server about room assignments
+SOLO_CHOICE = True                               # Whether users get choice to go solo
+DATABASE_SERVER = 'https://bree.lti.cs.cmu.edu'         # Activity server URL
 DATABASE_ROOM_PATH = 'api/user/room'
 NAMESPACE = 'default'
 ROOM_PREFIX = "room"
@@ -54,7 +53,7 @@ TIMEOUT_RESPONSE_CODE = 503
 
 # GLOBAL VARIABLES
 assigner_initialized = False
-nextRoomNum = 28000
+nextRoomNum = 261005000
 nextThreadNum = 0
 nextCheckForOldUsers = time.time() + CHECK_FOR_USER_DELETION_WAIT_TIME
 nextCheckForOldRooms = time.time() + CHECK_FOR_ROOM_DELETION_WAIT_TIME
@@ -117,6 +116,7 @@ class User(lobby_db.Model):
     password = lobby_db.Column(lobby_db.String(100), primary_key=False)
     entity_id = lobby_db.Column(lobby_db.VARCHAR(80), primary_key=False)
     module_slug = lobby_db.Column(lobby_db.String(50), primary_key=False)
+    participation_mode = lobby_db.Column(lobby_db.String(10), nullable=False, default='group')
     start_time = lobby_db.Column(lobby_db.DateTime(timezone=False), server_default=func.now())
     room_name = lobby_db.Column(lobby_db.VARCHAR(80))
     room_id = lobby_db.Column(lobby_db.Integer, lobby_db.ForeignKey('room.id'), nullable=True)
@@ -136,6 +136,10 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, NAMESPACE
+    data = request.get_json(silent=True) or {}
+    participation_mode = data.get('participationMode', 'group') if SOLO_CHOICE == True else 'group'
+    if participation_mode not in ('solo', 'group'):
+        return {'detail': 'Choose Work alone or Join a group.'}, 400
     print("getJupyterlabUrl: enter", flush=True)
     nextThreadNum += 1
     event_name = "event" + str(nextThreadNum)
@@ -146,7 +150,6 @@ def getJupyterlabUrl():
         current_user = threading.Thread()
         threadMapping[thread_name] = current_user
         current_user.event = event
-        data = json.loads(request.data.decode('utf-8'))
         print(f"getJupyterlabUrl -- data as string: {str(data)}", flush=True)
         name = data.get('name')
         email = data.get('email')
@@ -157,6 +160,12 @@ def getJupyterlabUrl():
               flush=True)
         with app.app_context():
             user = User.query.filter_by(user_id=user_id).first()
+
+            if user is not None and user.participation_mode != participation_mode:
+                eventMapping.pop(event_name, None)
+                threadMapping.pop(thread_name, None)
+                choice = 'Work alone' if user.participation_mode == 'solo' else 'Join a group'
+                return {'detail': 'You already started with ' + choice + '. Select that option to reopen your room. Contact course staff if you need a new room.'}, 409
 
             # If user is not new
             if user is not None:
@@ -176,6 +185,7 @@ def getJupyterlabUrl():
                         unassigned_users.remove(user)
                     user = User(user_id=user_id, name=name, email=email, password=password,
                                 entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
+                                participation_mode=participation_mode,
                                 activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                     session.add(user)
                     session.commit()
@@ -198,6 +208,7 @@ def getJupyterlabUrl():
                 print("getJupyterlabUrl: user " + str(user_id) + " is a new user", flush=True)
                 user = User(user_id=user_id, name=name, email=email, password=password,
                             entity_id=entity_id, ope_namespace=NAMESPACE, module_slug=MODULE_SLUG,
+                                participation_mode=participation_mode,
                             activity_url_notified=False, thread_name=thread_name, event_name=event_name)
                 session.add(user)
                 session.commit()
@@ -342,6 +353,20 @@ def dbServer(db_server):
     return "OK", 200
 
 
+@app.route('/soloChoice/<solo_choice>', methods=['PUT'])
+def soloChoice(solo_choice):
+    global SOLO_CHOICE
+    if (solo_choice == 'true') or (solo_choice == 'True') or (solo_choice == 'TRUE') or (solo_choice == 't') or (solo_choice == 'T'):
+        SOLO_CHOICE = True
+    else:
+        SOLO_CHOICE = False
+    if SOLO_CHOICE == True:
+        print("soloChoice = True", flush=True)
+    else:
+        print("soloChoice = False", flush=True)
+    return "OK", 200
+
+
 @app.route('/printRooms', methods=['PUT'])
 def printRooms():
     print("printRooms:", flush=True)
@@ -372,6 +397,7 @@ def help():
         f"Namespace - namespace:                  {NAMESPACE}\n"
         f"Module Slug - moduleSlug:               {MODULE_SLUG}\n"
         f"Notify Database - notifyDB:             {str(NOTIFY_DATABASE)}\n"
+        f"Solo Choice - soloChoice:               {str(SOLO_CHOICE)}\n"
         f"Database Server - dbServer:             {DATABASE_SERVER}\n"
         f"Delete Room - deleteRoom:               CAUTION\n" 
         f"Delete Room - deleteUser:               CAUTION\n" 
@@ -688,6 +714,11 @@ def is_duplicate_user(user_info, user):
 # TODO: Check if assignment request chain fails and react accordingly
 def assign_rooms():
     global unassigned_users, TARGET_USERS_PER_ROOM, MAX_USERS_PER_ROOM
+    # Solo users never enter the matching pool or wait for its timeout.
+    for user in list(unassigned_users):
+        if getattr(user, 'participation_mode', 'group') == 'solo':
+            unassigned_users.remove(user)
+            assign_new_room(1, selected_users=[user])
     num_unassigned_users = len(unassigned_users)
     if num_unassigned_users > 0:
 
@@ -698,6 +729,8 @@ def assign_rooms():
         # Fill rooms with the target number of users
         if num_unassigned_users >= TARGET_USERS_PER_ROOM:
             assign_new_rooms(TARGET_USERS_PER_ROOM)
+
+        num_unassigned_users = len(unassigned_users)
 
         # Check for any users waiting long enough that they should get a suboptimal assignment
         users_due_for_suboptimal = get_users_due_for_suboptimal()
@@ -784,6 +817,8 @@ def get_sorted_available_rooms(max_users):
                 print("   " + room.room_name + "  -  users: " + (str(len(room.users))), flush=True)
         current_time = time.time()
         for room in sorted_rooms:
+            if any(getattr(user, 'participation_mode', 'group') == 'solo' for user in room.users):
+                continue
             if room.room_name != "waiting_room":
                 time_diff = current_time - room.start_time.timestamp()
                 # print("get_sorted_available_rooms -- room: " + room.room_name + "  --  time_diff: " +
@@ -811,7 +846,7 @@ def assign_new_rooms(num_users_per_room):
         assign_new_room(num_users_per_room)
 
 # TODO: Check if assignment request chain fails and react accordingly
-def assign_new_room(num_users):
+def assign_new_room(num_users, selected_users=None):
     global nextRoomNum, session
 
     room_name = ROOM_PREFIX + str(nextRoomNum)
@@ -825,7 +860,11 @@ def assign_new_room(num_users):
         session.add(room)
         session.commit()
         session = lobby_db.session
-        assign_up_to_n_users(room, num_users, is_room_new)
+        if selected_users is None:
+            assign_up_to_n_users(room, num_users, is_room_new)
+        else:
+            for user in selected_users:
+                assign_room(user, room, is_room_new)
         request_session_plus_users(room)
 
     # print("assign_new_room - room.num_users: " + str(room.num_users), flush=True)
