@@ -18,7 +18,7 @@ class ParticipationTests(unittest.TestCase):
                 self.__dict__.update(kw);self.start_time=datetime.now();created.append(self)
         def queued(pair):pair[0].code=200;pair[0].url='test-room-url'
         session=NS(add=lambda u:None,commit=lambda:None)
-        env=dict(request=NS(get_json=lambda **kw:data),MODULE_SLUG='fcds-p2-26-fall-1a',nextThreadNum=0,
+        env=dict(SOLO_CHOICE=True,request=NS(is_json=True,mimetype='application/json',get_json=lambda **kw:data),MODULE_SLUG='fcds-p2-26-fall-1a',nextThreadNum=0,
                  threading=NS(Event=lambda:NS(wait=lambda:None),Thread=NS),eventMapping={},threadMapping={},
                  thread_lock=nullcontext(),email_to_dns=lambda email:'test-at-example-invalid',NAMESPACE='default',
                  app=NS(app_context=nullcontext),User=User,session=session,lobby_db=NS(session=session),

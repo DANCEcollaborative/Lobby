@@ -136,7 +136,17 @@ class User(lobby_db.Model):
 @app.route('/getJupyterlabUrl', methods=['POST'])
 def getJupyterlabUrl():
     global user_queue, session, nextThreadNum, threadMapping, eventMapping, NAMESPACE
-    data = request.get_json(silent=True) or {}
+    # Legacy SAIL clients send JSON with text/plain rather than application/json.
+    if not request.is_json and request.mimetype != 'text/plain':
+        return {'detail': 'Use application/json (legacy text/plain JSON is also accepted).'}, 415
+    data = request.get_json(force=request.mimetype == 'text/plain', silent=True)
+    if not isinstance(data, dict):
+        return {'detail': 'Request body must be a valid JSON object.'}, 400
+    required_fields = ('name', 'email', 'password', 'entityId')
+    invalid_fields = [field for field in required_fields
+                      if not isinstance(data.get(field), str) or not data[field].strip()]
+    if invalid_fields:
+        return {'detail': 'Required non-empty string fields: ' + ', '.join(invalid_fields)}, 400
     participation_mode = data.get('participationMode', 'group') if SOLO_CHOICE == True else 'group'
     if participation_mode not in ('solo', 'group'):
         return {'detail': 'Choose Work alone or Join a group.'}, 400
